@@ -63,13 +63,6 @@ const schema: EnvSchema = {
   },
 };
 
-type RuntimeEnv = Record<string, string | undefined>;
-
-const runtimeEnv: RuntimeEnv =
-  typeof process !== 'undefined' && typeof process.env !== 'undefined'
-    ? (process.env as RuntimeEnv)
-    : {};
-
 function normalizeString(value: string | undefined) {
   if (typeof value !== 'string') {
     return undefined;
@@ -79,49 +72,26 @@ function normalizeString(value: string | undefined) {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function parseInteger(value: string | undefined) {
-  const normalized = normalizeString(value);
-  if (!normalized) {
-    return undefined;
-  }
-
-  const parsed = Number.parseInt(normalized, 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function parsePositiveInteger(value: string | undefined) {
-  const parsed = parseInteger(value);
-  return typeof parsed === 'number' && parsed > 0 ? parsed : undefined;
-}
-
-function parseBoolean(value: string | undefined) {
-  const normalized = normalizeString(value);
-  if (!normalized) {
-    return undefined;
-  }
-
-  const lower = normalized.toLowerCase();
-
-  if (['true', '1', 'yes', 'on'].includes(lower)) {
-    return true;
-  }
-
-  if (['false', '0', 'no', 'off'].includes(lower)) {
-    return false;
-  }
-
-  return undefined;
-}
+const normalizedNodeEnv = normalizeString(process.env.NODE_ENV) as EnvConfig['NODE_ENV'] | undefined;
+const normalizedApiBase = normalizeString(process.env.NEXT_PUBLIC_API_BASE);
+const normalizedSiteUrl = normalizeString(process.env.NEXT_PUBLIC_SITE_URL);
+const normalizedRateLimitMax = normalizeString(process.env.API_RATE_LIMIT_MAX);
+const normalizedRateLimitWindow = normalizeString(process.env.API_RATE_LIMIT_WINDOW_MS);
+const normalizedCsrfCookieName = normalizeString(process.env.CSRF_COOKIE_NAME);
+const normalizedAuthCookieName = normalizeString(process.env.AUTH_SESSION_COOKIE_NAME);
+const normalizedDevtoolsEnabled = normalizeString(process.env.REDUX_DEVTOOLS_ENABLED);
 
 const rawEnv = {
-  NODE_ENV: normalizeString(runtimeEnv.NODE_ENV) as EnvConfig['NODE_ENV'] | undefined,
-  NEXT_PUBLIC_API_BASE: normalizeString(runtimeEnv.NEXT_PUBLIC_API_BASE),
-  NEXT_PUBLIC_SITE_URL: normalizeString(runtimeEnv.NEXT_PUBLIC_SITE_URL),
-  API_RATE_LIMIT_MAX: parsePositiveInteger(runtimeEnv.API_RATE_LIMIT_MAX),
-  API_RATE_LIMIT_WINDOW_MS: parsePositiveInteger(runtimeEnv.API_RATE_LIMIT_WINDOW_MS),
-  CSRF_COOKIE_NAME: normalizeString(runtimeEnv.CSRF_COOKIE_NAME),
-  AUTH_SESSION_COOKIE_NAME: normalizeString(runtimeEnv.AUTH_SESSION_COOKIE_NAME),
-  REDUX_DEVTOOLS_ENABLED: parseBoolean(runtimeEnv.REDUX_DEVTOOLS_ENABLED),
+  NODE_ENV: normalizedNodeEnv,
+  NEXT_PUBLIC_API_BASE: normalizedApiBase,
+  NEXT_PUBLIC_SITE_URL: normalizedSiteUrl,
+  API_RATE_LIMIT_MAX: normalizedRateLimitMax ? Number(normalizedRateLimitMax) : undefined,
+  API_RATE_LIMIT_WINDOW_MS: normalizedRateLimitWindow ? Number(normalizedRateLimitWindow) : undefined,
+  CSRF_COOKIE_NAME: normalizedCsrfCookieName,
+  AUTH_SESSION_COOKIE_NAME: normalizedAuthCookieName,
+  REDUX_DEVTOOLS_ENABLED: normalizedDevtoolsEnabled
+    ? normalizedDevtoolsEnabled === 'true'
+    : undefined,
 };
 
 function validateEnv(): EnvConfig {
