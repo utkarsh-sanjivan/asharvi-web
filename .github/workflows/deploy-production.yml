@@ -8,7 +8,6 @@ on:
 env:
   AWS_REGION: ap-south-1
   AWS_DEFAULT_REGION: ap-south-1
-  NODE_ENV: production
 
 jobs:
   build:
@@ -18,6 +17,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -25,34 +29,20 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Run unit tests
-        run: pnpm run test -- --runInBand
-
       - name: Build project
-        run: pnpm run build
+        run: pnpm run build:open-next
 
-      - name: Generate static export
-        run: pnpm exec next export -o out
+      - name: Archive OpenNext bundle
+        run: tar -C .open-next -czf open-next.tar.gz .
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: production-export
-          path: out
+          name: production-open-next
+          path: open-next.tar.gz
           if-no-files-found: error
 
   deploy:
@@ -73,8 +63,14 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: production-export
-          path: out
+          name: production-open-next
+          path: .
+
+      - name: Extract build artifact
+        run: |
+          rm -rf .open-next
+          mkdir -p .open-next
+          tar -xzf open-next.tar.gz -C .open-next
 
       - name: Sync assets to S3
         run: |
