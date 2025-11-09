@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import Providers from './providers';
 import { env } from '@/config/env';
 import {
@@ -11,8 +10,6 @@ import {
 } from '@/lib/redux-ssr';
 import { selectMetadataSnapshot } from '@/store/selectors/metadata.selectors';
 import '@/styles/globals.css';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-geist-sans' });
 
 const SITE_NAME = 'Ashravi';
 const DEFAULT_TITLE = 'Ashravi - Empowering Parents to Build Positive Child Behaviors';
@@ -108,7 +105,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className={inter.variable}>
+      <body>
         <Providers preloadedState={preloadedState}>{resolvedChildren}</Providers>
       </body>
     </html>
