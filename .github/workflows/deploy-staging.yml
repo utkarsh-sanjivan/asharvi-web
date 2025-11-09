@@ -74,7 +74,7 @@ jobs:
 
       - name: Sync assets to S3
         run: |
-          aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete
+          aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete --region "$AWS_REGION"
 
       - name: Invalidate CloudFront cache
         run: |
