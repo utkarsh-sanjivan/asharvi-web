@@ -31,11 +31,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build project
-        run: pnpm run build
+        run: pnpm run build:open-next
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: production-export
-          path: out
+          name: production-open-next
+          path: .open-next
           if-no-files-found: error
