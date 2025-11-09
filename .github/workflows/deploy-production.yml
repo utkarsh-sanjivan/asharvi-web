@@ -35,11 +35,14 @@ jobs:
       - name: Build project
         run: pnpm run build:open-next
 
+      - name: Archive OpenNext bundle
+        run: tar -C .open-next -czf open-next.tar.gz .
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: production-open-next
-          path: .open-next
+          path: open-next.tar.gz
           if-no-files-found: error
 
   deploy:
@@ -61,7 +64,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: production-open-next
-          path: .open-next
+          path: .
+
+      - name: Extract build artifact
+        run: |
+          rm -rf .open-next
+          mkdir -p .open-next
+          tar -xzf open-next.tar.gz -C .open-next
 
       - name: Sync assets to S3
         run: |
