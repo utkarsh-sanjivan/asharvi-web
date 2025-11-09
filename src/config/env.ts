@@ -63,20 +63,34 @@ const schema: EnvSchema = {
   },
 };
 
+function normalizeString(value: string | undefined) {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+const normalizedNodeEnv = normalizeString(process.env.NODE_ENV) as EnvConfig['NODE_ENV'] | undefined;
+const normalizedApiBase = normalizeString(process.env.NEXT_PUBLIC_API_BASE);
+const normalizedSiteUrl = normalizeString(process.env.NEXT_PUBLIC_SITE_URL);
+const normalizedRateLimitMax = normalizeString(process.env.API_RATE_LIMIT_MAX);
+const normalizedRateLimitWindow = normalizeString(process.env.API_RATE_LIMIT_WINDOW_MS);
+const normalizedCsrfCookieName = normalizeString(process.env.CSRF_COOKIE_NAME);
+const normalizedAuthCookieName = normalizeString(process.env.AUTH_SESSION_COOKIE_NAME);
+const normalizedDevtoolsEnabled = normalizeString(process.env.REDUX_DEVTOOLS_ENABLED);
+
 const rawEnv = {
-  NODE_ENV: process.env.NODE_ENV,
-  NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE,
-  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-  API_RATE_LIMIT_MAX: process.env.API_RATE_LIMIT_MAX
-    ? Number(process.env.API_RATE_LIMIT_MAX)
-    : undefined,
-  API_RATE_LIMIT_WINDOW_MS: process.env.API_RATE_LIMIT_WINDOW_MS
-    ? Number(process.env.API_RATE_LIMIT_WINDOW_MS)
-    : undefined,
-  CSRF_COOKIE_NAME: process.env.CSRF_COOKIE_NAME,
-  AUTH_SESSION_COOKIE_NAME: process.env.AUTH_SESSION_COOKIE_NAME,
-  REDUX_DEVTOOLS_ENABLED: process.env.REDUX_DEVTOOLS_ENABLED
-    ? process.env.REDUX_DEVTOOLS_ENABLED === 'true'
+  NODE_ENV: normalizedNodeEnv,
+  NEXT_PUBLIC_API_BASE: normalizedApiBase,
+  NEXT_PUBLIC_SITE_URL: normalizedSiteUrl,
+  API_RATE_LIMIT_MAX: normalizedRateLimitMax ? Number(normalizedRateLimitMax) : undefined,
+  API_RATE_LIMIT_WINDOW_MS: normalizedRateLimitWindow ? Number(normalizedRateLimitWindow) : undefined,
+  CSRF_COOKIE_NAME: normalizedCsrfCookieName,
+  AUTH_SESSION_COOKIE_NAME: normalizedAuthCookieName,
+  REDUX_DEVTOOLS_ENABLED: normalizedDevtoolsEnabled
+    ? normalizedDevtoolsEnabled === 'true'
     : undefined,
 };
 
