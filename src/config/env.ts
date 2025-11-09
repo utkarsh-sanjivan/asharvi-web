@@ -63,21 +63,65 @@ const schema: EnvSchema = {
   },
 };
 
+type RuntimeEnv = Record<string, string | undefined>;
+
+const runtimeEnv: RuntimeEnv =
+  typeof process !== 'undefined' && typeof process.env !== 'undefined'
+    ? (process.env as RuntimeEnv)
+    : {};
+
+function normalizeString(value: string | undefined) {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function parseInteger(value: string | undefined) {
+  const normalized = normalizeString(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(normalized, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parsePositiveInteger(value: string | undefined) {
+  const parsed = parseInteger(value);
+  return typeof parsed === 'number' && parsed > 0 ? parsed : undefined;
+}
+
+function parseBoolean(value: string | undefined) {
+  const normalized = normalizeString(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  const lower = normalized.toLowerCase();
+
+  if (['true', '1', 'yes', 'on'].includes(lower)) {
+    return true;
+  }
+
+  if (['false', '0', 'no', 'off'].includes(lower)) {
+    return false;
+  }
+
+  return undefined;
+}
+
 const rawEnv = {
-  NODE_ENV: process.env.NODE_ENV,
-  NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE,
-  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-  API_RATE_LIMIT_MAX: process.env.API_RATE_LIMIT_MAX
-    ? Number(process.env.API_RATE_LIMIT_MAX)
-    : undefined,
-  API_RATE_LIMIT_WINDOW_MS: process.env.API_RATE_LIMIT_WINDOW_MS
-    ? Number(process.env.API_RATE_LIMIT_WINDOW_MS)
-    : undefined,
-  CSRF_COOKIE_NAME: process.env.CSRF_COOKIE_NAME,
-  AUTH_SESSION_COOKIE_NAME: process.env.AUTH_SESSION_COOKIE_NAME,
-  REDUX_DEVTOOLS_ENABLED: process.env.REDUX_DEVTOOLS_ENABLED
-    ? process.env.REDUX_DEVTOOLS_ENABLED === 'true'
-    : undefined,
+  NODE_ENV: normalizeString(runtimeEnv.NODE_ENV) as EnvConfig['NODE_ENV'] | undefined,
+  NEXT_PUBLIC_API_BASE: normalizeString(runtimeEnv.NEXT_PUBLIC_API_BASE),
+  NEXT_PUBLIC_SITE_URL: normalizeString(runtimeEnv.NEXT_PUBLIC_SITE_URL),
+  API_RATE_LIMIT_MAX: parsePositiveInteger(runtimeEnv.API_RATE_LIMIT_MAX),
+  API_RATE_LIMIT_WINDOW_MS: parsePositiveInteger(runtimeEnv.API_RATE_LIMIT_WINDOW_MS),
+  CSRF_COOKIE_NAME: normalizeString(runtimeEnv.CSRF_COOKIE_NAME),
+  AUTH_SESSION_COOKIE_NAME: normalizeString(runtimeEnv.AUTH_SESSION_COOKIE_NAME),
+  REDUX_DEVTOOLS_ENABLED: parseBoolean(runtimeEnv.REDUX_DEVTOOLS_ENABLED),
 };
 
 function validateEnv(): EnvConfig {
