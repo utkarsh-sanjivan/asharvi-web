@@ -89,13 +89,13 @@ jobs:
         run: |
           rm -f server-function.zip
           pushd .open-next/server-functions/default >/dev/null
-          rm -f *.tgz
-          npm prune --omit=dev
           zip -qr ../../../server-function.zip .
           popd >/dev/null
+          aws s3 cp server-function.zip s3://$S3_BUCKET/lambda/server-function.zip --region "$AWS_REGION"
           aws lambda update-function-code \
             --function-name "$LAMBDA_FUNCTION_NAME" \
-            --zip-file fileb://server-function.zip
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key lambda/server-function.zip
 
       - name: Invalidate CloudFront cache
         run: |
