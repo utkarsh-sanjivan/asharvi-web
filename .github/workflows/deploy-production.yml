@@ -88,7 +88,9 @@ jobs:
           LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME_PRODUCTION }}
         run: |
           rm -f server-function.zip
-          (cd .open-next/server-functions/default && zip -qr ../../server-function.zip .)
+          pushd .open-next/server-functions/default >/dev/null
+          zip -qr ../../../server-function.zip .
+          popd >/dev/null
           aws lambda update-function-code \
             --function-name "$LAMBDA_FUNCTION_NAME" \
             --zip-file fileb://server-function.zip
