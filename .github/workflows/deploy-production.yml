@@ -89,6 +89,8 @@ jobs:
         run: |
           rm -f server-function.zip
           pushd .open-next/server-functions/default >/dev/null
+          rm -f *.tgz
+          npm prune --omit=dev
           zip -qr ../../../server-function.zip .
           popd >/dev/null
           aws lambda update-function-code \
