@@ -87,10 +87,11 @@ jobs:
         env:
           LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME_STAGING }}
         run: |
-          tar -C .open-next/server-functions/default -czf server-function.tar.gz .
+          rm -f server-function.zip
+          (cd .open-next/server-functions/default && zip -qr ../../server-function.zip .)
           aws lambda update-function-code \
             --function-name "$LAMBDA_FUNCTION_NAME" \
-            --zip-file "fileb://server-function.tar.gz"
+            --zip-file fileb://server-function.zip
 
       - name: Invalidate CloudFront cache
         run: |
