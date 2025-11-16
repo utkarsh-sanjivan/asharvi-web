@@ -77,7 +77,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ap-south-1
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -91,7 +91,7 @@ jobs:
           mkdir -p .open-next
           tar -xzf open-next.tar.gz -C .open-next
 
-      # 🔍 Auto-detect the correct server function folder
+      # 🔍 Auto-detect server function folder
       - name: Detect Lambda Server Folder
         id: detect-folder
         run: |
@@ -108,24 +108,27 @@ jobs:
           echo "✔️ Using Lambda folder: $SERVER_DIR"
           echo "server_dir=$SERVER_DIR" >> "$GITHUB_OUTPUT"
 
-      # 📦 Package Lambda Bundle
+      # 📦 FIXED: Package Lambda Function Correctly
       - name: Package Lambda Function
         run: |
           SERVER_DIR="${{ steps.detect-folder.outputs.server_dir }}"
-          echo "Zipping Lambda function from: $SERVER_DIR"
+          echo "Zipping contents of: $SERVER_DIR"
 
           rm -f server-function.zip
-          zip -qr server-function.zip "$SERVER_DIR"
+          
+          # 🔥 FIX: zip folder CONTENTS, not the folder itself
+          pushd "$SERVER_DIR"
+          zip -qr ../../../server-function.zip .
+          popd
 
           echo "Lambda package contents:"
           unzip -l server-function.zip
 
-      # 🚀 Upload Lambda bundle to S3
+      # 🚀 Upload Lambda zip to S3
       - name: Upload Lambda zip to S3
         run: |
           aws s3 cp server-function.zip s3://$S3_BUCKET/lambda/server-function.zip --region "$AWS_REGION"
 
-      # 🔄 Update Lambda function
       - name: Update Lambda Function Code
         run: |
           aws lambda update-function-code \
@@ -135,7 +138,6 @@ jobs:
             --publish \
             --region "$AWS_REGION"
 
-      # 🟩 Ensure Lambda logging is enabled
       - name: Enable Lambda Logging
         run: |
           aws lambda put-function-event-invoke-config \
@@ -143,22 +145,17 @@ jobs:
             --maximum-event-age-in-seconds 60 \
             --maximum-retry-attempts 0 || true
 
-      # 🗂 Sync static files to S3
       - name: Sync static assets to S3
         run: |
           echo "Uploading /assets → s3://$S3_BUCKET ..."
           aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete --region "$AWS_REGION"
 
-      # ❄️ Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
         run: |
-          echo "Invalidating CloudFront cache..."
           aws cloudfront create-invalidation \
             --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-            --paths "/*" \
-            --region "$AWS_REGION"
+            --paths "/*"
 
-      # 🔔 Deployment status
       - name: Notify deployment status
         if: always()
         run: |
