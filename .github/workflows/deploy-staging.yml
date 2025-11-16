@@ -77,7 +77,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -152,9 +152,11 @@ jobs:
       # ❄️ Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
         run: |
+          echo "Invalidating CloudFront cache..."
           aws cloudfront create-invalidation \
             --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-            --paths "/*"
+            --paths "/*" \
+            --region "$AWS_REGION"
 
       # 🔔 Deployment status
       - name: Notify deployment status
