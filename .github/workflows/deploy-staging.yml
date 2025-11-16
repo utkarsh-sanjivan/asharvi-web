@@ -111,18 +111,12 @@ jobs:
       # 📦 FIXED: Package Lambda Function Correctly
       - name: Package Lambda Function
         run: |
-          SERVER_DIR="${{ steps.detect-folder.outputs.server_dir }}"
-          echo "Zipping contents of: $SERVER_DIR"
+          echo "Zipping complete server-functions bundle..."
 
           rm -f server-function.zip
-          
-          # 🔥 FIX: zip folder CONTENTS, not the folder itself
-          pushd "$SERVER_DIR"
-          zip -qr ../../../server-function.zip .
-          popd
 
-          echo "Lambda package contents:"
-          unzip -l server-function.zip
+          cd .open-next/server-functions
+          zip -qr ../../server-function.zip .
 
       # 🚀 Upload Lambda zip to S3
       - name: Upload Lambda zip to S3
