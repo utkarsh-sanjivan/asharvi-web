@@ -7,12 +7,14 @@ on:
 
 env:
   AWS_REGION: ap-south-1
-  AWS_DEFAULT_REGION: ap-south-1
+  NODE_VERSION: 20
+  PNPM_VERSION: 9
 
 jobs:
   build:
-    name: Build & Test (Staging)
+    name: Build & Package (Staging)
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,23 +22,31 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 9
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
+
+      - name: Cache Next.js build output
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build project
+      - name: Build OpenNext project
         run: pnpm run build:open-next
 
       - name: Archive OpenNext bundle
-        run: tar -C .open-next -czf open-next.tar.gz .
+        run: |
+          tar -C .open-next -czf open-next.tar.gz .
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -51,11 +61,13 @@ jobs:
     needs: build
     environment:
       name: staging
+
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ap-south-1
       S3_BUCKET: ${{ secrets.S3_BUCKET_STAGING }}
       CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_STAGING }}
+      LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME_STAGING }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -73,37 +85,79 @@ jobs:
           name: staging-open-next
           path: .
 
-      - name: Extract build artifact
+      - name: Extract OpenNext bundle
         run: |
           rm -rf .open-next
           mkdir -p .open-next
           tar -xzf open-next.tar.gz -C .open-next
 
-      - name: Sync assets to S3
+      # 🔍 Auto-detect the correct server function folder
+      - name: Detect Lambda Server Folder
+        id: detect-folder
         run: |
-          aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete
+          echo "Searching for Next.js server handler (index.mjs)..."
+          SERVER_DIR=$(find .open-next/server-functions -maxdepth 3 -type f -name "index.mjs" -printf '%h\n' | head -1)
 
-      - name: Update Lambda function
-        env:
-          LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME_STAGING }}
+          if [ -z "$SERVER_DIR" ]; then
+            echo "❌ ERROR: No Lambda function directory found containing index.mjs"
+            echo "OpenNext output structure:"
+            find .open-next/server-functions -maxdepth 3 -type d -print
+            exit 1
+          fi
+
+          echo "✔️ Using Lambda folder: $SERVER_DIR"
+          echo "server_dir=$SERVER_DIR" >> "$GITHUB_OUTPUT"
+
+      # 📦 Package Lambda Bundle
+      - name: Package Lambda Function
         run: |
+          SERVER_DIR="${{ steps.detect-folder.outputs.server_dir }}"
+          echo "Zipping Lambda function from: $SERVER_DIR"
+
           rm -f server-function.zip
-          pushd .open-next/server-functions/default >/dev/null
-          zip -qr ../../../server-function.zip .
-          popd >/dev/null
+          zip -qr server-function.zip "$SERVER_DIR"
+
+          echo "Lambda package contents:"
+          unzip -l server-function.zip
+
+      # 🚀 Upload Lambda bundle to S3
+      - name: Upload Lambda zip to S3
+        run: |
           aws s3 cp server-function.zip s3://$S3_BUCKET/lambda/server-function.zip --region "$AWS_REGION"
+
+      # 🔄 Update Lambda function
+      - name: Update Lambda Function Code
+        run: |
           aws lambda update-function-code \
             --function-name "$LAMBDA_FUNCTION_NAME" \
             --s3-bucket "$S3_BUCKET" \
-            --s3-key lambda/server-function.zip
+            --s3-key lambda/server-function.zip \
+            --publish \
+            --region "$AWS_REGION"
 
+      # 🟩 Ensure Lambda logging is enabled
+      - name: Enable Lambda Logging
+        run: |
+          aws lambda put-function-event-invoke-config \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --maximum-event-age-in-seconds 60 \
+            --maximum-retry-attempts 0 || true
+
+      # 🗂 Sync static files to S3
+      - name: Sync static assets to S3
+        run: |
+          echo "Uploading /assets → s3://$S3_BUCKET ..."
+          aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete --region "$AWS_REGION"
+
+      # ❄️ Invalidate CloudFront Cache
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
             --paths "/*"
 
+      # 🔔 Deployment status
       - name: Notify deployment status
         if: always()
         run: |
-          echo "Deployment to staging completed with status: ${{ job.status }}"
+          echo "Deployment to STAGING completed with status: ${{ job.status }}"
