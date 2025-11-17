@@ -97,12 +97,16 @@ jobs:
         # ----------------------------------------------------
         # ZIP the ENTIRE server-functions directory (mandatory)
         # ----------------------------------------------------
-        - name: Package Lambda Function
+        - name: Package Lambda Function (correct OpenNext 3.x)
           run: |
-            echo "Zipping full OpenNext bundle..."
+            echo "Zipping server-functions/default ..."
+            
             rm -f server-function.zip
-            cd .open-next
-            zip -qr ../server-function.zip .
+
+            cd .open-next/server-functions/default
+
+            zip -qr $GITHUB_WORKSPACE/server-function.zip .
+
 
         - name: Upload Lambda zip to S3
           run: |
