@@ -12,7 +12,7 @@
     "test": "vitest",
     "test:e2e": "playwright test",
     "analyze": "ANALYZE=true next build",
-    "build:open-next": "open-next build"
+    "build:open-next": "open-next build && node scripts/create-lambda-entry.js .open-next/server-functions/default"
   },
   "dependencies": {
     "@swc/helpers": "^0.5.15",
