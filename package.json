@@ -15,6 +15,7 @@
     "build:open-next": "open-next build"
   },
   "dependencies": {
+    "@swc/helpers": "^0.5.15",
     "@playwright/test": "^1.55.1",
     "@reduxjs/toolkit": "^2.0.0",
     "@vitejs/plugin-react": "^5.0.4",
