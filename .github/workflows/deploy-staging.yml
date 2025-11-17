@@ -99,10 +99,10 @@ jobs:
         # ----------------------------------------------------
         - name: Package Lambda Function
           run: |
-            echo "Zipping full OpenNext server-functions bundle..."
+            echo "Zipping full OpenNext bundle..."
             rm -f server-function.zip
-            cd .open-next/server-functions
-            zip -qr ../../server-function.zip .
+            cd .open-next
+            zip -qr ../server-function.zip .
 
         - name: Upload Lambda zip to S3
           run: |
