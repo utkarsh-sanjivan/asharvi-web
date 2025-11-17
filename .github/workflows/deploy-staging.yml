@@ -16,127 +16,133 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: ${{ env.PNPM_VERSION }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+
+    - name: Cache Next.js build output
+      uses: actions/cache@v4
+      with:
+        path: |
+          .next/cache
+        key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Build OpenNext project
+      run: pnpm run build:open-next
+
+    # 🔧 PATCH: force @swc/helpers into the server Lambda bundle
+    - name: Inject SWC helpers into server function bundle
+      run: |
+        echo "Injecting @swc/helpers into .open-next/server-functions/default/node_modules ..."
+        if [ -d "node_modules/@swc/helpers" ]; then
+          mkdir -p .open-next/server-functions/default/node_modules/@swc
+          cp -R node_modules/@swc/helpers .open-next/server-functions/default/node_modules/@swc/helpers
+          echo "Contents of default/node_modules:"
+          ls -R .open-next/server-functions/default/node_modules
+        else
+          echo "❌ node_modules/@swc/helpers not found in root. Build is invalid."
+          exit 1
+        fi
+
+    - name: Archive OpenNext bundle
+      run: |
+        tar -C .open-next -czf open-next.tar.gz .
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: staging-open-next
+        path: open-next.tar.gz
+        if-no-files-found: error
+
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: staging
+
+    env:
+      AWS_REGION: ap-south-1
+      S3_BUCKET: ${{ secrets.S3_BUCKET_STAGING }}
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_STAGING }}
+      # use the actual function name directly
+      LAMBDA_FUNCTION_NAME: asharvi-ssr-stag
+
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          version: ${{ env.PNPM_VERSION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Cache Next.js build output
-        uses: actions/cache@v4
-        with:
-          path: |
-            .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build OpenNext project
-        run: pnpm run build:open-next
-
-      - name: Archive OpenNext bundle
-        run: |
-          tar -C .open-next -czf open-next.tar.gz .
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
         with:
           name: staging-open-next
-          path: open-next.tar.gz
-          if-no-files-found: error
+          path: .
 
-  deploy:
-      name: Deploy to Staging
-      runs-on: ubuntu-latest
-      needs: build
-      environment:
-        name: staging
+      - name: Extract OpenNext bundle
+        run: |
+          rm -rf .open-next
+          mkdir -p .open-next
+          tar -xzf open-next.tar.gz -C .open-next
 
-      env:
-        AWS_REGION: ap-south-1
-        S3_BUCKET: ${{ secrets.S3_BUCKET_STAGING }}
-        CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_STAGING }}
-        # -----------------------------------------
-        # ALWAYS deploy to the real Lambda function
-        # -----------------------------------------
-        LAMBDA_FUNCTION_NAME: asharvi-ssr-stag
+      # 📦 Package ONLY the server-functions/default folder
+      - name: Package Lambda Function
+        run: |
+          echo "Zipping .open-next/server-functions/default as Lambda bundle..."
+          rm -f server-function.zip
+          cd .open-next/server-functions/default
 
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v4
+          echo "Bundle node_modules structure (for debugging):"
+          ls -R node_modules || true
 
-        - name: Configure AWS credentials
-          uses: aws-actions/configure-aws-credentials@v4
-          with:
-            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws-region: ap-south-1
+          zip -qr $GITHUB_WORKSPACE/server-function.zip .
 
-        - name: Download build artifact
-          uses: actions/download-artifact@v4
-          with:
-            name: staging-open-next
-            path: .
+      - name: Upload Lambda zip to S3
+        run: |
+          aws s3 cp server-function.zip s3://$S3_BUCKET/lambda/server-function.zip --region "$AWS_REGION"
 
-        - name: Extract OpenNext bundle
-          run: |
-            rm -rf .open-next
-            mkdir -p .open-next
-            tar -xzf open-next.tar.gz -C .open-next
+      - name: Update Lambda Function Code
+        run: |
+          aws lambda update-function-code \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --s3-bucket "$S3_BUCKET" \
+            --s3-key lambda/server-function.zip \
+            --publish \
+            --region "$AWS_REGION"
 
-        # ----------------------------------------------------
-        # ZIP the ENTIRE server-functions directory (mandatory)
-        # ----------------------------------------------------
-        - name: Package Lambda Function (correct OpenNext 3.x)
-          run: |
-            echo "Zipping server-functions/default ..."
-            
-            rm -f server-function.zip
+      - name: Sync static assets to S3
+        run: |
+          echo "Uploading /assets → s3://$S3_BUCKET ..."
+          aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete --region "$AWS_REGION"
 
-            cd .open-next/server-functions/default
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/*"
 
-            zip -qr $GITHUB_WORKSPACE/server-function.zip .
-
-
-        - name: Upload Lambda zip to S3
-          run: |
-            aws s3 cp server-function.zip s3://$S3_BUCKET/lambda/server-function.zip --region "$AWS_REGION"
-
-        # -------------------------------------------------------
-        # Update Lambda function from S3 ZIP (Zip-based Function)
-        # -------------------------------------------------------
-        - name: Update Lambda Function Code
-          run: |
-            aws lambda update-function-code \
-              --function-name "$LAMBDA_FUNCTION_NAME" \
-              --s3-bucket "$S3_BUCKET" \
-              --s3-key lambda/server-function.zip \
-              --publish \
-              --region "$AWS_REGION"
-
-        - name: Sync static assets to S3
-          run: |
-            echo "Uploading /assets → s3://$S3_BUCKET ..."
-            aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete --region "$AWS_REGION"
-
-        - name: Invalidate CloudFront cache
-          run: |
-            aws cloudfront create-invalidation \
-              --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-              --paths "/*"
-
-        - name: Notify deployment status
-          if: always()
-          run: |
-            echo "Deployment to STAGING completed with status: ${{ job.status }}"
-
+      - name: Notify deployment status
+        if: always()
+        run: |
+          echo "Deployment to STAGING completed with status: ${{ job.status }}"
