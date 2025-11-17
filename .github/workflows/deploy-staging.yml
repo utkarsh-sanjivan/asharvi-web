@@ -111,14 +111,11 @@ jobs:
       # 📦 FIXED: Package Lambda Function Correctly
       - name: Package Lambda Function
         run: |
-          echo "Zipping complete Lambda bundle..."
+          echo "Zipping full server-functions bundle..."
+          rm -f server-function.zip
 
-          ZIP_DEST="$GITHUB_WORKSPACE/server-function.zip"
-          rm -f "$ZIP_DEST"
-          SERVER_DIR="${{ steps.detect-folder.outputs.server_dir }}"
-
-          cd "$SERVER_DIR"
-          zip -qr "$ZIP_DEST" .
+          cd .open-next/server-functions
+          zip -qr ../../server-function.zip .
 
       # 🚀 Upload Lambda zip to S3
       - name: Upload Lambda zip to S3
