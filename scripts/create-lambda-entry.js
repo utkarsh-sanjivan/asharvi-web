@@ -29,25 +29,58 @@ fs.mkdirSync(targetDir, { recursive: true });
 fs.writeFileSync(entryPath, stubLines.join("\n"), "utf8");
 console.log(`Created Lambda entry proxy at ${entryPath}`);
 
-const extraModules = ["@swc/helpers", "styled-jsx"];
-const rootNodeModules = path.join(process.cwd(), "node_modules");
-const destNodeModules = path.join(targetDir, "node_modules");
+const nodeModulesDir = path.join(targetDir, "node_modules");
+fs.mkdirSync(nodeModulesDir, { recursive: true });
 
-fs.mkdirSync(destNodeModules, { recursive: true });
+const pnpmDir = path.join(nodeModulesDir, ".pnpm");
+const linkedPackages = new Set();
 
-for (const moduleName of extraModules) {
-  const sourcePath = path.join(rootNodeModules, moduleName);
-  const destinationPath = path.join(destNodeModules, moduleName);
-
-  if (!fs.existsSync(sourcePath)) {
-    console.warn(`Skipping ${moduleName}; not found at ${sourcePath}`);
-    continue;
+function ensureSymlink(moduleName, sourceDir) {
+  const destPath = path.join(nodeModulesDir, ...moduleName.split("/"));
+  fs.mkdirSync(path.dirname(destPath), { recursive: true });
+  if (fs.existsSync(destPath)) {
+    fs.rmSync(destPath, { recursive: true, force: true });
   }
-
-  if (fs.existsSync(destinationPath)) {
-    fs.rmSync(destinationPath, { recursive: true, force: true });
+  const relativeTarget = path.relative(path.dirname(destPath), sourceDir);
+  try {
+    fs.symlinkSync(relativeTarget, destPath, "dir");
+  } catch (err) {
+    if (err.code === "EPERM" && process.platform === "win32") {
+      fs.cpSync(sourceDir, destPath, { recursive: true, dereference: true });
+    } else {
+      throw err;
+    }
   }
-
-  fs.cpSync(sourcePath, destinationPath, { recursive: true, dereference: true });
-  console.log(`Injected ${moduleName} into server bundle`);
+  linkedPackages.add(moduleName);
 }
+
+function linkFromDirectory(dir, prefix = "") {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith(".")) continue;
+    const entryPath = path.join(dir, entry.name);
+    if (entry.name.startsWith("@")) {
+      linkFromDirectory(entryPath, entry.name);
+      continue;
+    }
+    const moduleName = prefix ? `${prefix}/${entry.name}` : entry.name;
+    ensureSymlink(moduleName, entryPath);
+  }
+}
+
+if (fs.existsSync(pnpmDir)) {
+  for (const entry of fs.readdirSync(pnpmDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const moduleNodeModules = path.join(pnpmDir, entry.name, "node_modules");
+    if (fs.existsSync(moduleNodeModules)) {
+      linkFromDirectory(moduleNodeModules);
+    }
+  }
+  const pnpmNodeModules = path.join(pnpmDir, "node_modules");
+  if (fs.existsSync(pnpmNodeModules)) {
+    linkFromDirectory(pnpmNodeModules);
+  }
+}
+
+console.log(`Linked ${linkedPackages.size} pnpm packages into node_modules`);
