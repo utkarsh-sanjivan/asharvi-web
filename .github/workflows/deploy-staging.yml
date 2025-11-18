@@ -44,20 +44,6 @@ jobs:
     - name: Build OpenNext project
       run: pnpm run build:open-next
 
-    # 🔧 PATCH: force @swc/helpers into the server Lambda bundle
-    - name: Inject SWC helpers into server function bundle
-      run: |
-        echo "Injecting @swc/helpers into .open-next/server-functions/default/node_modules ..."
-        if [ -d "node_modules/@swc/helpers" ]; then
-          mkdir -p .open-next/server-functions/default/node_modules/@swc
-          cp -R node_modules/@swc/helpers .open-next/server-functions/default/node_modules/@swc/helpers
-          echo "Contents of default/node_modules:"
-          ls -R .open-next/server-functions/default/node_modules
-        else
-          echo "❌ node_modules/@swc/helpers not found in root. Build is invalid."
-          exit 1
-        fi
-
     - name: Archive OpenNext bundle
       run: |
         tar -C .open-next -czf open-next.tar.gz .
