@@ -84,3 +84,19 @@ if (fs.existsSync(pnpmDir)) {
 }
 
 console.log(`Linked ${linkedPackages.size} pnpm packages into node_modules`);
+
+const assetsSource = path.join(process.cwd(), ".open-next", "assets");
+const publicAssetsDestination = path.join(targetDir, "_next");
+
+if (fs.existsSync(assetsSource)) {
+  if (fs.existsSync(publicAssetsDestination)) {
+    fs.rmSync(publicAssetsDestination, { recursive: true, force: true });
+  }
+  const staticSource = path.join(assetsSource, "_next");
+  if (fs.existsSync(staticSource)) {
+    fs.cpSync(staticSource, publicAssetsDestination, {
+      recursive: true,
+    });
+    console.log(`Copied static assets from ${staticSource} → ${publicAssetsDestination}`);
+  }
+}
