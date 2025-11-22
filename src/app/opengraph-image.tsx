@@ -3,29 +3,38 @@ import { ImageResponse } from 'next/og';
 import { getMiddlewarePreloadedState, initializeServerStore } from '@/lib/redux-ssr';
 import { selectMetadataSnapshot } from '@/store/selectors/metadata.selectors';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
 
-const gradientForVariant = (variant: 'guest' | 'member') =>
+type Variant = 'guest' | 'member';
+
+const gradientForVariant = (variant: Variant) =>
   variant === 'member'
     ? 'linear-gradient(135deg, #0f172a 0%, #1d4ed8 50%, #38bdf8 100%)'
     : 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 60%, #93c5fd 100%)';
 
-const overlayColor = (variant: 'guest' | 'member') =>
+const overlayColor = (variant: Variant) =>
   variant === 'member' ? 'rgba(148, 163, 184, 0.85)' : 'rgba(226, 232, 240, 0.9)';
 
-export async function GET(request: Request) {
+const normalizeParam = (value: string | string[] | undefined): string | undefined =>
+  Array.isArray(value) ? value[0] : value;
+
+export default async function Image({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const middlewareState = await getMiddlewarePreloadedState();
   const store = initializeServerStore(middlewareState);
   const snapshot = selectMetadataSnapshot(store.getState());
 
-  const url = new URL(request.url);
-  const requestedVariant = url.searchParams.get('variant');
-  const variant = requestedVariant === 'member' ? 'member' : requestedVariant === 'guest' ? 'guest' : snapshot.variant;
-  const headline = url.searchParams.get('headline') ?? snapshot.headline;
-  const subheading = url.searchParams.get('subheading') ?? snapshot.cta;
+  const requestedVariant = normalizeParam(searchParams.variant);
+  const variant: Variant =
+    requestedVariant === 'member' ? 'member' : requestedVariant === 'guest' ? 'guest' : snapshot.variant;
+  const headline = normalizeParam(searchParams.headline) ?? snapshot.headline;
+  const subheading = normalizeParam(searchParams.subheading) ?? snapshot.cta;
 
   return new ImageResponse(
     (

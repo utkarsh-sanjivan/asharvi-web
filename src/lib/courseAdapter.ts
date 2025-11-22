@@ -138,12 +138,12 @@ const resolveWishlistFlag = (course: APICourse): boolean => {
     return course.isInWishlist;
   }
 
-  const wishlistBoolean = (course as Record<string, unknown>).wishlist;
+  const wishlistBoolean = (course as unknown as Record<string, unknown>).wishlist;
   if (typeof wishlistBoolean === 'boolean') {
     return wishlistBoolean;
   }
 
-  const wishlistStatus = (course as Record<string, unknown>).wishlistStatus;
+  const wishlistStatus = (course as unknown as Record<string, unknown>).wishlistStatus;
   if (typeof wishlistStatus === 'string') {
     const normalized = wishlistStatus.trim().toLowerCase();
     if (['added', 'wishlisted', 'true', 'yes', 'saved'].includes(normalized)) {

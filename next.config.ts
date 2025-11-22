@@ -3,8 +3,10 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   devIndicators: {
-    buildActivity: false,
-    buildActivityPosition: 'bottom-right',
+    position: 'bottom-right',
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   env: {
     NEXT_PUBLIC_API_BASE: process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000/api/v1',

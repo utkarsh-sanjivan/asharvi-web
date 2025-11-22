@@ -1,4 +1,6 @@
 :root {
+  --font-geist-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   /* Light theme colors */
   --color-bg: #ffffff;
   --color-text: #111111;
