@@ -64,9 +64,11 @@ jobs:
 
     env:
       AWS_REGION: ap-south-1
+      # MUST be just the bucket name (no s3://, no path)
       S3_BUCKET: ${{ secrets.S3_BUCKET_PROD }}
       CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }}
       LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME_PRODUCTION }}
+      LAMBDA_S3_KEY: lambda/server-function.zip
 
     steps:
       - name: Checkout repository
@@ -97,28 +99,29 @@ jobs:
           rm -f server-function.zip
           cd .open-next/server-functions/default
 
-          echo "Bundle node_modules structure (for debugging):"
-          ls -R node_modules || true
+          echo "Listing server bundle (for debugging):"
+          ls
 
-          zip -qr $GITHUB_WORKSPACE/server-function.zip .
+          zip -qr "$GITHUB_WORKSPACE/server-function.zip" .
 
       - name: Upload Lambda zip to S3
         run: |
-          aws s3 cp server-function.zip s3://$S3_BUCKET/lambda/server-function.zip --region "$AWS_REGION"
+          echo "Uploading Lambda zip to s3://$S3_BUCKET/$LAMBDA_S3_KEY"
+          aws s3 cp "server-function.zip" "s3://$S3_BUCKET/$LAMBDA_S3_KEY" --region "$AWS_REGION"
 
       - name: Update Lambda Function Code
         run: |
           aws lambda update-function-code \
             --function-name "$LAMBDA_FUNCTION_NAME" \
             --s3-bucket "$S3_BUCKET" \
-            --s3-key lambda/server-function.zip \
+            --s3-key "$LAMBDA_S3_KEY" \
             --publish \
             --region "$AWS_REGION"
 
       - name: Sync static assets to S3
         run: |
-          echo "Uploading /assets → s3://$S3_BUCKET ..."
-          aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete --region "$AWS_REGION"
+          echo "Uploading .open-next/assets → s3://$S3_BUCKET ..."
+          aws s3 sync ".open-next/assets" "s3://$S3_BUCKET" --delete --region "$AWS_REGION"
 
       - name: Invalidate CloudFront cache
         run: |
