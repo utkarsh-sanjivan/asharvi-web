@@ -91,22 +91,23 @@ jobs:
           mkdir -p .open-next
           tar -xzf open-next.tar.gz -C .open-next
 
-      - name: Sync static assets to S3
+      - name: Package Lambda Function
         run: |
-          echo "Uploading assets to s3://$S3_BUCKET ..."
-          aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete --region "$AWS_REGION"
-
-      - name: Package and upload Lambda function
-        run: |
-          echo "Zipping and uploading Lambda function..."
+          echo "Zipping .open-next/server-functions/default as Lambda bundle..."
           rm -f server-function.zip
-          pushd .open-next/server-functions/default >/dev/null
-          zip -qr ../../../server-function.zip .
-          popd >/dev/null
+          cd .open-next/server-functions/default
 
+          echo "Bundle node_modules structure (for debugging):"
+          ls -R node_modules || true
+
+          zip -qr $GITHUB_WORKSPACE/server-function.zip .
+
+      - name: Upload Lambda zip to S3
+        run: |
           aws s3 cp server-function.zip s3://$S3_BUCKET/lambda/server-function.zip --region "$AWS_REGION"
 
-          echo "Updating Lambda function..."
+      - name: Update Lambda Function Code
+        run: |
           aws lambda update-function-code \
             --function-name "$LAMBDA_FUNCTION_NAME" \
             --s3-bucket "$S3_BUCKET" \
@@ -114,19 +115,18 @@ jobs:
             --publish \
             --region "$AWS_REGION"
 
+      - name: Sync static assets to S3
+        run: |
+          echo "Uploading /assets → s3://$S3_BUCKET ..."
+          aws s3 sync ./.open-next/assets s3://$S3_BUCKET --delete --region "$AWS_REGION"
+
       - name: Invalidate CloudFront cache
         run: |
-          echo "Invalidating CloudFront cache..."
           aws cloudfront create-invalidation \
             --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-            --paths "/*" \
-            --region "$AWS_REGION"
+            --paths "/*"
 
       - name: Notify deployment status
         if: always()
         run: |
-          echo "✅ Deployment to production completed with status: ${{ job.status }}"
-          # Example webhook integration (uncomment and replace URL)
-          # curl -X POST -H 'Content-type: application/json' \
-          # --data '{"text":"Production deployment completed: ${{ job.status }}"}' \
-          # https://hooks.slack.com/services/XXXX/YYYY/ZZZZ
+          echo "Deployment to PRODUCTION completed with status: ${{ job.status }}"
