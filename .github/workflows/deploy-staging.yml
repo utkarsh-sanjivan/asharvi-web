@@ -17,7 +17,6 @@ jobs:
 
     # Env vars visible to the build (Next.js / OpenNext)
     env:
-      NODE_ENV: production
       NEXT_PUBLIC_API_BASE: ${{ secrets.STAGING_NEXT_PUBLIC_API_BASE }}
       NEXT_PUBLIC_SITE_URL: ${{ secrets.STAGING_NEXT_PUBLIC_SITE_URL }}
       API_RATE_LIMIT_MAX: ${{ secrets.STAGING_API_RATE_LIMIT_MAX }}
@@ -53,6 +52,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build OpenNext project
+        env:
+          NODE_ENV: production
         run: pnpm run build:open-next
 
       - name: Archive OpenNext bundle
