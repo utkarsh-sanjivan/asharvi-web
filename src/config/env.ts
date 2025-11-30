@@ -25,7 +25,7 @@ const schema: EnvSchema = {
     errorMessage: 'NODE_ENV must be one of development, production, or test.',
   },
   NEXT_PUBLIC_API_BASE: {
-    default: 'http://localhost:8000/api/v1',
+    default: 'http://localhost:8080/api/v1',
     validate: (value: unknown): value is string => typeof value === 'string' && value.length > 0,
     errorMessage: 'NEXT_PUBLIC_API_BASE must be a non-empty string.',
   },
