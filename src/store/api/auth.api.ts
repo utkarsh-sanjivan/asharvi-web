@@ -1,5 +1,6 @@
 import { env } from '@/config/env';
 import { apiService } from '@/services/api.service';
+import { setUser, clearUser } from '@/store/user.slice';
 import type {
   AuthUser,
   LoginRequest,
@@ -34,6 +35,25 @@ export const authApi = apiService.injectEndpoints({
         message: response?.message,
         user: normalizeUser(response?.user ?? response?.data?.user ?? {}),
       }),
+      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.user) {
+            dispatch(
+              setUser({
+                id: data.user.id,
+                name: data.user.name,
+                email: data.user.email,
+                role: data.user.role,
+                createdAt: data.user.createdAt ?? null,
+                updatedAt: data.user.updatedAt ?? null,
+              })
+            );
+          }
+        } catch {
+          // ignore; errors handled by baseQuery/extraReducers
+        }
+      },
     }),
     logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
@@ -45,10 +65,17 @@ export const authApi = apiService.injectEndpoints({
         success: Boolean(response?.success ?? true),
         message: response?.message,
       }),
+      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } finally {
+          dispatch(clearUser());
+        }
+      },
     }),
     register: builder.mutation<RegisterResponse, RegisterRequest>({
       query: (payload) => ({
-        url: `${env.NEXT_PUBLIC_API_BASE}/auth/register`,
+        url: '/api/auth/register',
         method: 'POST',
         body: payload,
       }),
@@ -57,6 +84,25 @@ export const authApi = apiService.injectEndpoints({
         message: response?.message,
         user: normalizeUser(response?.data?.user ?? response?.user ?? payloadFallback(response)),
       }),
+      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.user) {
+            dispatch(
+              setUser({
+                id: data.user.id,
+                name: data.user.name,
+                email: data.user.email,
+                role: data.user.role,
+                createdAt: data.user.createdAt ?? null,
+                updatedAt: data.user.updatedAt ?? null,
+              })
+            );
+          }
+        } catch {
+          // ignore; handled elsewhere
+        }
+      },
     }),
     profile: builder.query<ProfileResponse, void>({
       query: () => ({
@@ -67,6 +113,28 @@ export const authApi = apiService.injectEndpoints({
       transformResponse: (response: any): ProfileResponse => ({
         user: normalizeUser(response?.user ?? response?.data?.user ?? {}),
       }),
+      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.user) {
+            dispatch(
+              setUser({
+                id: data.user.id,
+                name: data.user.name,
+                email: data.user.email,
+                role: data.user.role,
+                createdAt: data.user.createdAt ?? null,
+                updatedAt: data.user.updatedAt ?? null,
+              })
+            );
+          }
+        } catch (error: any) {
+          const status = error?.error?.status;
+          if (status === 401) {
+            dispatch(clearUser());
+          }
+        }
+      },
     }),
     refresh: builder.mutation<RefreshResponse, void>({
       query: () => ({
@@ -78,6 +146,28 @@ export const authApi = apiService.injectEndpoints({
         success: Boolean(response?.success ?? true),
         user: response?.user ? normalizeUser(response.user) : undefined,
       }),
+      async onQueryStarted(_args, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.user) {
+            dispatch(
+              setUser({
+                id: data.user.id,
+                name: data.user.name,
+                email: data.user.email,
+                role: data.user.role,
+                createdAt: data.user.createdAt ?? null,
+                updatedAt: data.user.updatedAt ?? null,
+              })
+            );
+          }
+        } catch (error: any) {
+          const status = error?.error?.status;
+          if (status === 401) {
+            dispatch(clearUser());
+          }
+        }
+      },
     }),
   }),
   overrideExisting: true,

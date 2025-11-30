@@ -71,11 +71,8 @@ export const coursesApi = apiService.injectEndpoints({
   endpoints: (builder) => ({
     list: builder.query<CourseListResponse, CourseListRequest | void>({
       async queryFn(params, queryApi, _extraOptions, baseQuery) {
-        const state = queryApi.getState() as RootState;
-        const userId = state.user?.isAuthenticated ? state.user?.id : null;
         const queryString = buildQueryString(params ?? {});
-        const parentQuery = userId ? `${queryString ? '&' : '?'}parentId=${encodeURIComponent(userId)}` : '';
-        const url = resolveInternalApiUrl(`/api/courses${queryString}${parentQuery}`);
+        const url = resolveInternalApiUrl(`/api/courses${queryString}`);
 
         const result = await baseQuery({ url, method: 'GET' });
 
@@ -95,10 +92,7 @@ export const coursesApi = apiService.injectEndpoints({
     }),
     detail: builder.query<CourseDetailResponse, string>({
       async queryFn(courseId, queryApi, _extraOptions, baseQuery) {
-        const state = queryApi.getState() as RootState;
-        const userId = state.user?.isAuthenticated ? state.user?.id : null;
-        const parentQuery = userId ? `?parentId=${encodeURIComponent(userId)}` : '';
-        const url = resolveInternalApiUrl(`/api/courses/${courseId}${parentQuery}`);
+        const url = resolveInternalApiUrl(`/api/courses/${courseId}`);
 
         const result = await baseQuery({ url, method: 'GET' });
 
@@ -109,6 +103,26 @@ export const coursesApi = apiService.injectEndpoints({
         return { data: normalizeDetailResponse(result.data) };
       },
       providesTags: (result, error, courseId) => [{ type: 'Course', id: courseId }],
+    }),
+    wishlist: builder.query<{ ids: string[]; courses: any[] }, string>({
+      async queryFn(parentId, _queryApi, _extraOptions, baseQuery) {
+        const url = resolveInternalApiUrl(`/api/parents/${encodeURIComponent(parentId)}/wishlist`);
+        const result = await baseQuery({ url, method: 'GET' });
+
+        if (result.error) {
+          return { error: result.error };
+        }
+
+        const courses = Array.isArray((result.data as any)?.data)
+          ? ((result.data as any).data as any[])
+          : [];
+        const ids = courses
+          .map((course) => course?.id ?? course?._id ?? null)
+          .filter((id): id is string => Boolean(id));
+
+        return { data: { ids, courses } };
+      },
+      providesTags: [{ type: 'Courses', id: 'WISHLIST' }],
     }),
     toggleWishlist: builder.mutation<{ status: 'added' | 'removed' }, { parentId: string; courseId: string; action: 'add' | 'remove' }>({
       query: ({ parentId, courseId, action }) => {
@@ -140,6 +154,7 @@ export const coursesApi = apiService.injectEndpoints({
       invalidatesTags: (result, error, { courseId }) => [
         { type: 'Course' as const, id: courseId },
         { type: 'Courses' as const, id: 'LIST' },
+        { type: 'Courses' as const, id: 'WISHLIST' },
       ],
       async onQueryStarted({ courseId, action }, { dispatch, getState, queryFulfilled }) {
         const state = getState() as RootState;
@@ -184,4 +199,5 @@ export const {
   useLazyListQuery: useLazyCoursesListQuery,
   useDetailQuery: useCourseDetailQuery,
   useToggleWishlistMutation,
+  useWishlistQuery,
 } = coursesApi;

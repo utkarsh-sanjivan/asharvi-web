@@ -7,6 +7,7 @@ import { env } from '@/config/env';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 type HeadersLike = Headers & { toJSON?: () => Record<string, string> };
+const hasClientDocument = () => typeof document !== 'undefined';
 
 const ensureHeaders = (candidate: FetchArgs['headers']): HeadersLike => {
   if (candidate instanceof Headers) {
@@ -29,17 +30,6 @@ const ensureHeaders = (candidate: FetchArgs['headers']): HeadersLike => {
   const record = candidate as Record<string, string | undefined>;
   const normalized = Object.entries(record).map(([key, value]) => [key, value ?? '']);
   return new Headers(normalized as Array<[string, string]>) as HeadersLike;
-};
-
-const attachClientCsrf = (headers: HeadersLike, method: string) => {
-  if (SAFE_METHODS.has(method)) {
-    return;
-  }
-
-  const csrfToken = getClientCookie(env.CSRF_COOKIE_NAME);
-  if (csrfToken) {
-    headers.set('X-CSRF-Token', csrfToken);
-  }
 };
 
 const attachServerContext = async (headers: HeadersLike, method: string) => {
@@ -75,7 +65,7 @@ const attachServerContext = async (headers: HeadersLike, method: string) => {
 };
 
 function getClientCookie(name: string): string | null {
-  if (typeof document === 'undefined') {
+  if (!hasClientDocument()) {
     return null;
   }
 
@@ -167,6 +157,26 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
+const attachClientCsrf = (headers: HeadersLike, method: string) => {
+  if (SAFE_METHODS.has(method)) {
+    return;
+  }
+
+  const csrfToken = getClientCookie(env.CSRF_COOKIE_NAME);
+  if (csrfToken) {
+    headers.set('X-CSRF-Token', csrfToken);
+  }
+};
+
+const hasActiveSession = (headers: HeadersLike): boolean => {
+  if (hasClientDocument()) {
+    return document.cookie.split('; ').some((entry) => entry.startsWith(`${env.AUTH_SESSION_COOKIE_NAME}=`));
+  }
+
+  const cookieHeader = headers.get('Cookie');
+  return cookieHeader ? cookieHeader.includes(`${env.AUTH_SESSION_COOKIE_NAME}=active`) : false;
+};
+
 const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, ApiError> = async (
   args,
   api,
@@ -184,6 +194,12 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, ApiError> = 
   let result = await rawBaseQuery(normalizedArgs, api, extraOptions);
 
   if (result.error && result.error.status === 401) {
+    if (!hasActiveSession(headers)) {
+      const clearUserAction = await getClearUserAction();
+      api.dispatch(clearUserAction());
+      return { error: normalizeApiError(result.error) };
+    }
+
     const refreshResult = await rawBaseQuery(
       {
         url: '/api/auth/refresh',

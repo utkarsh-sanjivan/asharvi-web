@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { env } from '@/config/env';
 import { setAuthCookies } from '@/lib/auth-cookies';
 
-interface LoginRequestBody {
+interface RegisterRequestBody {
+  name: string;
   email: string;
   password: string;
-  rememberMe?: boolean;
+  phoneNumber?: string;
+  occupation?: string;
+  city?: string;
 }
 
 function normalizeAuthResponse(response: any) {
@@ -44,56 +48,43 @@ function normalizeAuthResponse(response: any) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: LoginRequestBody = await request.json();
+    const body: RegisterRequestBody = await request.json();
 
-    if (!body.email || !body.password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
-    }
-
-    const upstreamResponse = await fetch(`${env.NEXT_PUBLIC_API_BASE}/auth/login`, {
+    const upstreamResponse = await fetch(`${env.NEXT_PUBLIC_API_BASE}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email: body.email, password: body.password }),
       cache: 'no-store',
+      body: JSON.stringify(body),
     });
 
     const result = await upstreamResponse.json().catch(() => null);
 
     if (!upstreamResponse.ok) {
-      const message = result?.message || result?.error || 'Failed to login';
+      const message = result?.message || result?.error || 'Failed to register';
       return NextResponse.json({ error: message }, { status: upstreamResponse.status });
     }
 
     const { accessToken, refreshToken, user } = normalizeAuthResponse(result);
 
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: 'Login response did not include an access token' },
-        { status: 502 }
-      );
+    if (accessToken) {
+      await setAuthCookies({
+        accessToken,
+        refreshToken,
+        user,
+      });
     }
-
-    await setAuthCookies({
-      accessToken,
-      refreshToken,
-      user,
-      remember: body.rememberMe,
-    });
 
     return NextResponse.json({
       success: true,
+      message: result?.message ?? 'Registration successful',
       user,
-      message: result?.message || 'Login successful',
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Register error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to login' },
+      { error: error instanceof Error ? error.message : 'Failed to register' },
       { status: 500 }
     );
   }

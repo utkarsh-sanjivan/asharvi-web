@@ -74,9 +74,9 @@ const wishlistSlice = createAppSlice({
             return;
           }
 
-          if (course?.isWishlisted) {
+          if (course?.isWishlisted === true) {
             nextIds.add(courseId);
-          } else {
+          } else if (course?.isWishlisted === false) {
             nextIds.delete(courseId);
           }
         });
@@ -91,13 +91,18 @@ const wishlistSlice = createAppSlice({
           return;
         }
 
-        if (course?.isWishlisted) {
+        if (course?.isWishlisted === true) {
           if (!state.courseIds.includes(courseId)) {
             state.courseIds.push(courseId);
           }
-        } else {
+        } else if (course?.isWishlisted === false) {
           state.courseIds = state.courseIds.filter((id) => id !== courseId);
         }
+      })
+      .addMatcher(coursesApi.endpoints.wishlist.matchFulfilled, (state, action) => {
+        const ids = action.payload?.ids ?? [];
+        state.courseIds = ids;
+        state.pending = {};
       });
   },
 });
