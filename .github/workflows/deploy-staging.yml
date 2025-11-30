@@ -140,6 +140,9 @@ jobs:
             --publish \
             --region "$AWS_REGION"
 
+      - name: Wait for Lambda update to finish
+        run: sleep 30
+
       - name: Update Lambda Environment
         run: |
           aws lambda update-function-configuration \
