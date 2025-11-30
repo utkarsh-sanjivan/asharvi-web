@@ -52,6 +52,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build OpenNext project
+        env:
+          NODE_ENV: production
         run: pnpm run build:open-next
 
       - name: Archive OpenNext bundle
@@ -134,6 +136,12 @@ jobs:
             --s3-bucket "$S3_BUCKET" \
             --s3-key "$LAMBDA_S3_KEY" \
             --publish \
+            --region "$AWS_REGION"
+
+      - name: Wait for Lambda update to finish
+        run: |
+          aws lambda wait function-updated \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
             --region "$AWS_REGION"
 
       - name: Update Lambda Environment
