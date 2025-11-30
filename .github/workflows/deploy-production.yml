@@ -15,6 +15,16 @@ jobs:
     name: Build & Package (Production)
     runs-on: ubuntu-latest
 
+    env:
+      NEXT_PUBLIC_API_BASE: ${{ secrets.PROD_NEXT_PUBLIC_API_BASE }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.PROD_NEXT_PUBLIC_SITE_URL }}
+      API_RATE_LIMIT_MAX: ${{ secrets.PROD_API_RATE_LIMIT_MAX }}
+      API_RATE_LIMIT_WINDOW_MS: ${{ secrets.PROD_API_RATE_LIMIT_WINDOW_MS }}
+      CSRF_COOKIE_NAME: ${{ secrets.PROD_CSRF_COOKIE_NAME }}
+      AUTH_SESSION_COOKIE_NAME: ${{ secrets.PROD_AUTH_SESSION_COOKIE_NAME }}
+      REDUX_DEVTOOLS_ENABLED: ${{ secrets.PROD_REDUX_DEVTOOLS_ENABLED }}
+      JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
