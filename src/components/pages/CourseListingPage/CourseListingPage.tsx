@@ -18,7 +18,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useFeatureModules } from '@/hooks/useFeatureModule';
 import type { FeatureModuleKey } from '@/store/modules/registry';
 import { clearFilters, setCurrentPage, setFilters as setCourseFilters } from '@/store/courses.slice';
-import { coursesApi, useCoursesListQuery } from '@/store/api/courses.api';
+import { coursesApi, useCoursesListQuery, useWishlistQuery } from '@/store/api/courses.api';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import {
   selectCourseCurrentPage,
@@ -26,6 +26,7 @@ import {
   selectCoursesStatus,
 } from '@/store/selectors/courses.selectors';
 import { selectMockCourses } from '@/store/selectors/mock.selectors';
+import { selectUserProfile } from '@/store/selectors/user.selectors';
 import type { LoadingStatus } from '@/store/courses.slice';
 
 import type { FilterState, SortOption } from '@/types';
@@ -76,6 +77,7 @@ export default function CourseListingPage({
   const devMockCourses = useAppSelector(selectMockCourses);
   const coursesStatus = useAppSelector(selectCoursesStatus);
   const coursesError = useAppSelector(selectCoursesError);
+  const user = useAppSelector(selectUserProfile);
 
   const initialQuery = searchParams.get('q') ?? initialSearch ?? '';
   const [searchQuery, setSearchQuery] = useState(initialQuery);
@@ -120,6 +122,10 @@ export default function CourseListingPage({
 
   const { data, isFetching, isLoading, error } = useCoursesListQuery(queryArgs, {
     skip: isChecking || !featuresReady,
+  });
+
+  useWishlistQuery(user?.id ?? '', {
+    skip: !featuresReady || !user?.id,
   });
 
   const prefetchCoursesList = coursesApi.usePrefetch('list');

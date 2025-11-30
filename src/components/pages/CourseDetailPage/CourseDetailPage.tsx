@@ -13,7 +13,7 @@ import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useFeatureModules } from '@/hooks/useFeatureModule';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import type { FeatureModuleKey } from '@/store/modules/registry';
-import { useCourseDetailQuery, useToggleWishlistMutation } from '@/store/api/courses.api';
+import { useCourseDetailQuery, useToggleWishlistMutation, useWishlistQuery } from '@/store/api/courses.api';
 import { selectMockCourses } from '@/store/selectors/mock.selectors';
 import { selectUserProfile } from '@/store/selectors/user.selectors';
 import {
@@ -144,6 +144,9 @@ export default function CourseDetailPage({ courseId }: CourseDetailPageProps) {
 
   const { data, isLoading, isFetching, error } = useCourseDetailQuery(courseId, {
     skip: !isAuthenticated,
+  });
+  useWishlistQuery(user?.id ?? '', {
+    skip: !wishlistReady || !user?.id,
   });
   const [toggleWishlist, { isLoading: isWishlistMutating }] = useToggleWishlistMutation();
 
