@@ -139,7 +139,10 @@ jobs:
             --region "$AWS_REGION"
 
       - name: Wait for Lambda update to finish
-        run: sleep 30
+        run: |
+          aws lambda wait function-updated \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --region "$AWS_REGION"
 
       - name: Update Lambda Environment
         run: |
