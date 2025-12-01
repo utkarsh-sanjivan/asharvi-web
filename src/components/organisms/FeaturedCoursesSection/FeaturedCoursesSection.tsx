@@ -9,9 +9,8 @@ import Button from '@/components/atoms/Button';
 import SpinnerIcon from '@/components/icons/SpinnerIcon';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useCoursesListQuery, useWishlistQuery } from '@/store/api/courses.api';
+import { useCoursesListQuery } from '@/store/api/courses.api';
 import { selectMockCourses } from '@/store/selectors/mock.selectors';
-import { selectUserProfile } from '@/store/selectors/user.selectors';
 
 import './index.css';
 
@@ -33,11 +32,7 @@ export default function FeaturedCoursesSection({
   ctaHref = '/courses',
   useCarousel = true,
 }: FeaturedCoursesSectionProps) {
-  const user = useAppSelector(selectUserProfile);
   const { data, isLoading, isFetching, error } = useCoursesListQuery({ page: 1, limit });
-  useWishlistQuery(user?.id ?? '', {
-    skip: !user?.id,
-  });
   const devMockCourses = useAppSelector(selectMockCourses);
   const courses = data?.data ?? [];
   const shouldUseMock =

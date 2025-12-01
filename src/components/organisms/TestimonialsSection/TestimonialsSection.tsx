@@ -59,7 +59,6 @@ export default function TestimonialsSection({ testimonials }: TestimonialsSectio
                         width={80}
                         height={80}
                         className="testimonial-avatar"
-                        unoptimized
                       />
                     </div>
                   )}
