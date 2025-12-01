@@ -26,7 +26,7 @@ const schema: EnvSchema = {
     errorMessage: 'NODE_ENV must be one of development, production, or test.',
   },
   APP_ENV: {
-    default: 'production',
+    default: 'development',
     validate: (value: unknown): value is EnvConfig['APP_ENV'] =>
       value === 'development' || value === 'staging' || value === 'production',
     errorMessage: 'APP_ENV must be one of development, staging, or production.',
