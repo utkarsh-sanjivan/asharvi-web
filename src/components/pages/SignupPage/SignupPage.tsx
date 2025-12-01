@@ -164,7 +164,11 @@ export default function SignupPage() {
         city: city
       }).unwrap();
 
-      router.push('/auth/login?registered=true');
+      if (env.APP_ENV === 'production') {
+        router.push('/');
+      } else {
+        router.push('/auth/login?registered=true');
+      }
     } catch (error: any) {
       console.error('❌ Registration error:', error);
 

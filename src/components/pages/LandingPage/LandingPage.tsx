@@ -1,4 +1,5 @@
 import React from 'react';
+import { env } from '@/config/env';
 import PublicNavbar from '@/components/organisms/PublicNavbar';
 import HeroSection from '@/components/organisms/HeroSection';
 import WhyChooseSection from '@/components/organisms/WhyChooseSection';
@@ -8,10 +9,15 @@ import PopularCoursesSection from '@/components/organisms/PopularCoursesSection'
 import TestimonialsSection from '@/components/organisms/TestimonialsSection';
 import NewsletterSection from '@/components/organisms/NewsletterSection';
 import Footer from '@/components/organisms/Footer';
+import ProductionLandingPage from './ProductionLandingPage';
 
 import { landingFeatures, landingSteps, landingTestimonials } from '@/config/landing.config';
 
 export default function LandingPage() {
+  if (env.APP_ENV === 'production') {
+    return <ProductionLandingPage />;
+  }
+
   return (
     <>
       <PublicNavbar isAuthenticated={false} showSearch={false} transparent={true} />
