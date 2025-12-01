@@ -1,5 +1,6 @@
 interface EnvConfig {
   NODE_ENV: 'development' | 'production' | 'test';
+  APP_ENV: 'development' | 'staging' | 'production';
   NEXT_PUBLIC_API_BASE: string;
   NEXT_PUBLIC_SITE_URL: string;
   API_RATE_LIMIT_MAX: number;
@@ -23,6 +24,12 @@ const schema: EnvSchema = {
     validate: (value: unknown): value is EnvConfig['NODE_ENV'] =>
       value === 'development' || value === 'production' || value === 'test',
     errorMessage: 'NODE_ENV must be one of development, production, or test.',
+  },
+  APP_ENV: {
+    default: 'production',
+    validate: (value: unknown): value is EnvConfig['APP_ENV'] =>
+      value === 'development' || value === 'staging' || value === 'production',
+    errorMessage: 'APP_ENV must be one of development, staging, or production.',
   },
   NEXT_PUBLIC_API_BASE: {
     default: 'http://localhost:8080/api/v1',
@@ -73,6 +80,7 @@ function normalizeString(value: string | undefined) {
 }
 
 const normalizedNodeEnv = normalizeString(process.env.NODE_ENV) as EnvConfig['NODE_ENV'] | undefined;
+const normalizedAppEnv = normalizeString(process.env.APP_ENV) as EnvConfig['APP_ENV'] | undefined;
 const normalizedApiBase = normalizeString(process.env.NEXT_PUBLIC_API_BASE);
 const normalizedSiteUrl = normalizeString(process.env.NEXT_PUBLIC_SITE_URL);
 const normalizedRateLimitMax = normalizeString(process.env.API_RATE_LIMIT_MAX);
@@ -83,6 +91,7 @@ const normalizedDevtoolsEnabled = normalizeString(process.env.REDUX_DEVTOOLS_ENA
 
 const rawEnv = {
   NODE_ENV: normalizedNodeEnv,
+  APP_ENV: normalizedAppEnv,
   NEXT_PUBLIC_API_BASE: normalizedApiBase,
   NEXT_PUBLIC_SITE_URL: normalizedSiteUrl,
   API_RATE_LIMIT_MAX: normalizedRateLimitMax ? Number(normalizedRateLimitMax) : undefined,
