@@ -392,7 +392,7 @@ export default function LearningPage({ courseId }: { courseId: string }) {
             <span className="learning-breadcrumb-divider">/</span>
             <Link href="/courses">Courses</Link>
             <span className="learning-breadcrumb-divider">/</span>
-            <Link href={`/course/${courseId}`}>Course details</Link>
+            <Link href={`/course/${courseId}`}>{course.title ?? 'Course details'}</Link>
             <span className="learning-breadcrumb-divider">/</span>
             <span aria-current="page">Learning</span>
           </nav>
