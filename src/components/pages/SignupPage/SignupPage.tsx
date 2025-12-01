@@ -164,7 +164,8 @@ export default function SignupPage() {
         city: city
       }).unwrap();
 
-      if (env.APP_ENV === 'production') {
+      const appEnv = process.env.NEXT_PUBLIC_APP_ENV ?? 'development';
+      if (appEnv === 'production') {
         router.push('/');
       } else {
         router.push('/auth/login?registered=true');
