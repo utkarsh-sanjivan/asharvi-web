@@ -5,8 +5,6 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 
 import CountdownTimer from '@/components/molecules/CountdownTimer/CountdownTimer';
-import heroImage from '@/../public/images/hero-landing-desktop.jpg';
-import logoImage from '@/../public/images/logo.jpg';
 
 import './production.css';
 
@@ -22,12 +20,13 @@ export default function ProductionLandingPage() {
         <div className="prod-landing-left">
           <div className="prod-landing-brand">
             <Image
-              src={logoImage}
+              src="/images/logo.jpg"
               alt="Ashravi logo"
               width={40}
               height={40}
               className="prod-landing-brand-logo"
               priority
+              unoptimized
             />
             <span className="prod-landing-logo">Ashravi</span>
           </div>
@@ -45,12 +44,13 @@ export default function ProductionLandingPage() {
 
         <div className="prod-landing-right">
           <Image
-            src={heroImage}
+            src="/images/hero-landing-desktop.jpg"
             alt="Parent guiding a child with positive habits"
             fill
             priority
             className="prod-landing-image"
             sizes="(max-width: 768px) 100vw, 50vw"
+            unoptimized
           />
         </div>
       </section>
