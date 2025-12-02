@@ -25,6 +25,7 @@ jobs:
       AUTH_SESSION_COOKIE_NAME: ${{ secrets.STAGING_AUTH_SESSION_COOKIE_NAME }}
       REDUX_DEVTOOLS_ENABLED: ${{ secrets.STAGING_REDUX_DEVTOOLS_ENABLED }}
       JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET }}
+      APP_ENV: 'staging'
 
     steps:
       - name: Checkout repository
