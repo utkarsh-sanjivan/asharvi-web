@@ -14,7 +14,12 @@ import ProductionLandingPage from './ProductionLandingPage';
 import { landingFeatures, landingSteps, landingTestimonials } from '@/config/landing.config';
 
 export default function LandingPage() {
-  if (env.APP_ENV === 'production') {
+  const appEnv =
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_APP_ENV) ||
+    env.APP_ENV ||
+    'development';
+
+  if (appEnv === 'production') {
     return <ProductionLandingPage />;
   }
 
