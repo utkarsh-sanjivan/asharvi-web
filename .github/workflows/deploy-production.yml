@@ -89,6 +89,7 @@ jobs:
       AUTH_SESSION_COOKIE_NAME: ${{ secrets.PROD_AUTH_SESSION_COOKIE_NAME }}
       REDUX_DEVTOOLS_ENABLED: ${{ secrets.PROD_REDUX_DEVTOOLS_ENABLED }}
       JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+      APP_ENV: 'production'
 
     steps:
       - name: Checkout repository
