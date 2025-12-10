@@ -38,7 +38,10 @@ export async function generateMetadata(): Promise<Metadata> {
     title,
     description: snapshot.description,
     icons: {
-      icon: [{ url: '/favicon.ico', sizes: 'any' }],
+      icon: [
+        { url: '/favicon.ico', sizes: 'any' },
+        { url: '/favicon.svg', type: 'image/svg+xml' },
+      ],
       shortcut: '/favicon.ico',
       apple: '/favicon.ico',
     },
