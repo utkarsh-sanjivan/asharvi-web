@@ -14,10 +14,10 @@ import type { FilterState } from '@/types';
 import type { CourseListRequest } from '@/types/api/courses';
 
 export const metadata: Metadata = {
-  title: 'Browse Courses | Ashravi Web',
+  title: 'Browse Courses | Asharvi Web',
   description: 'Discover the perfect parenting education course. Filter by price, duration, level, and rating to find courses that match your needs.',
   openGraph: {
-    title: 'Browse Courses | Ashravi Web',
+    title: 'Browse Courses | Asharvi Web',
     description: 'Explore our comprehensive catalog of parenting education courses',
     type: 'website',
   },

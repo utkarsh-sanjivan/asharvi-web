@@ -49,7 +49,7 @@ export const landingTestimonials = [
     name: 'Sarah Johnson',
     role: 'Mother of Two',
     avatar: '/images/testimonials/avatar1.jpg',
-    quote: 'Ashravi completely transformed how I handle my son\'s tantrums. The evidence-based strategies gave me confidence and practical tools that actually work. Being a parent has never felt more manageable.',
+    quote: 'Asharvi completely transformed how I handle my son\'s tantrums. The evidence-based strategies gave me confidence and practical tools that actually work. Being a parent has never felt more manageable.',
     rating: 5,
   },
   {
@@ -65,7 +65,7 @@ export const landingTestimonials = [
     name: 'Emily Rodriguez',
     role: 'Single Mother',
     avatar: '/images/testimonials/avatar3.jpg',
-    quote: 'I was overwhelmed as a single parent. Ashravi\'s evidence-based approach gave me the confidence and tools I needed to handle challenging behaviors with love and patience. My daughter and I are so much happier now.',
+    quote: 'I was overwhelmed as a single parent. Asharvi\'s evidence-based approach gave me the confidence and tools I needed to handle challenging behaviors with love and patience. My daughter and I are so much happier now.',
     rating: 5,
   },
 ];

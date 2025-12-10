@@ -73,7 +73,7 @@ export default async function Image({
             color: 'rgba(248, 250, 252, 0.9)',
           }}
         >
-          <span>Ashravi Parenting Platform</span>
+          <span>Asharvi Parenting Platform</span>
           <span>ashravi.com</span>
         </div>
       </div>

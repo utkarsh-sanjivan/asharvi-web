@@ -30,7 +30,7 @@ export const selectMetadataSnapshot = createSelector(selectUserState, (user): Me
     : 'Empowering Parents with Evidence-based Guidance';
 
   const description = isAuthenticated
-    ? `Continue your personalised Ashravi journey${user?.name ? `, ${user.name}` : ''} with curated parenting insights and courses.`
+    ? `Continue your personalised Asharvi journey${user?.name ? `, ${user.name}` : ''} with curated parenting insights and courses.`
     : 'Discover evidence-based parenting strategies and courses crafted by behavior experts to build positive child behaviours.';
 
   const cta = isAuthenticated

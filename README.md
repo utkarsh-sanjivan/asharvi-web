@@ -1,4 +1,4 @@
-# Ashravi Web - Learning Platform
+# Asharvi Web - Learning Platform
 
 A comprehensive Next.js 15 learning platform built with TypeScript, Redux Toolkit, and Tailwind CSS.
 

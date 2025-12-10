@@ -11,8 +11,8 @@ import {
 import { selectMetadataSnapshot } from '@/store/selectors/metadata.selectors';
 import '@/styles/globals.css';
 
-const SITE_NAME = 'Ashravi';
-const DEFAULT_TITLE = 'Ashravi - Empowering Parents to Build Positive Child Behaviors';
+const SITE_NAME = 'Asharvi';
+const DEFAULT_TITLE = 'Asharvi - Empowering Parents to Build Positive Child Behaviors';
 
 export async function generateMetadata(): Promise<Metadata> {
   const middlewareState = await getMiddlewarePreloadedState();
@@ -92,7 +92,7 @@ export default async function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Organization',
-              name: 'Ashravi',
+              name: 'Asharvi',
               description: 'Evidence-based parenting platform for child behavior',
               url: 'https://ashravi.com',
               logo: 'https://ashravi.com/logo.png',

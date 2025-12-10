@@ -21,14 +21,14 @@ export default function ProductionLandingPage() {
           <div className="prod-landing-brand">
             <Image
               src="/images/logo.jpg"
-              alt="Ashravi logo"
+              alt="Asharvi logo"
               width={40}
               height={40}
               className="prod-landing-brand-logo"
               priority
               unoptimized
             />
-            <span className="prod-landing-logo">Ashravi</span>
+            <span className="prod-landing-logo">Asharvi</span>
           </div>
           <h1 className="prod-landing-title">Positive parenting, simplified.</h1>
           <p className="prod-landing-subtitle">

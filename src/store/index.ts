@@ -103,7 +103,7 @@ export const makeStore = (preloadedState?: Record<string, unknown>): AppStoreWit
 
   const devToolsConfig: DevToolsEnhancerOptions | boolean = devToolsEnabled
     ? {
-        name: 'Ashravi Store',
+        name: 'Asharvi Store',
         trace: env.NODE_ENV !== 'production',
         traceLimit: 25,
         actionSanitizer: devToolsActionSanitizer,

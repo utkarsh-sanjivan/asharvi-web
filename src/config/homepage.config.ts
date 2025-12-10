@@ -31,7 +31,7 @@ export const homepageTestimonials = [
     name: 'Jennifer Martinez',
     role: 'Mother of Three',
     avatar: '/images/testimonials/avatar4.jpg',
-    quote: 'The personalized parenting approach made all the difference. My kids are happier, our home is more peaceful, and I finally feel like I\'m doing it right. The support and guidance from Ashravi has been invaluable.',
+    quote: 'The personalized parenting approach made all the difference. My kids are happier, our home is more peaceful, and I finally feel like I\'m doing it right. The support and guidance from Asharvi has been invaluable.',
     rating: 5,
   },
   {
@@ -39,7 +39,7 @@ export const homepageTestimonials = [
     name: 'David Thompson',
     role: 'Father of Two',
     avatar: '/images/testimonials/avatar5.jpg',
-    quote: 'Ashravi gave me practical parenting tools that work with my kids\' unique personalities. I\'m more confident as a father and my relationship with my children has never been better. Highly recommend to any parent!',
+    quote: 'Asharvi gave me practical parenting tools that work with my kids\' unique personalities. I\'m more confident as a father and my relationship with my children has never been better. Highly recommend to any parent!',
     rating: 5,
   },
 ];
