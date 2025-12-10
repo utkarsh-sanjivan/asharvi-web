@@ -39,7 +39,7 @@ export default function TestimonialsSection({ testimonials }: TestimonialsSectio
         <div className="section-header">
           <h2 className="section-title">Success Stories</h2>
           <p className="section-subtitle">
-            Real results from parents using Ashravi
+            Real results from parents using Asharvi
           </p>
         </div>
 

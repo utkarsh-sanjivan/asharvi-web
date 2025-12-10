@@ -44,7 +44,7 @@ export default function LandingPage() {
       />
 
       <WhyChooseSection
-        title="Why Choose Ashravi?"
+        title="Why Choose Asharvi?"
         subtitle="Transform your parenting journey with proven strategies"
         features={landingFeatures}
         ctaText="Take a Free Assessment"

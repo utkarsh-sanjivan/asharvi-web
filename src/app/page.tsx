@@ -5,7 +5,7 @@ import { isAuthenticated } from '@/lib/auth';
 import RootPageWrapper from '@/components/pages/RootPageWrapper';
 
 export const metadata: Metadata = {
-  title: 'Ashravi - Empowering Parents',
+  title: 'Asharvi - Empowering Parents',
   description: 'Discover evidence-based parenting strategies designed by child behavior experts',
 };
 

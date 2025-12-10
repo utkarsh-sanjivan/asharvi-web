@@ -216,7 +216,7 @@ export default function LoginPage() {
           {/* Header */}
           <div className="login-header">
             <Link href="/" className="logo-link">
-              <h1 className="login-logo">Ashravi</h1>
+              <h1 className="login-logo">Asharvi</h1>
             </Link>
             <h2 className="login-title">Welcome Back</h2>
             <p className="login-subtitle">Login to continue your parenting journey</p>

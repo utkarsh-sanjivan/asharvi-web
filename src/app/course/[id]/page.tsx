@@ -14,7 +14,7 @@ interface CourseDetailParams {
   id: string;
 }
 
-const SITE_NAME = 'Ashravi Web';
+const SITE_NAME = 'Asharvi Web';
 
 export async function generateMetadata({
   params,

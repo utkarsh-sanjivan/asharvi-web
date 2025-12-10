@@ -210,10 +210,10 @@ export default function SignupPage() {
       <div className="signup-container">
         <div className="signup-card">
 
-          {/* Ashravi Header and Description */}
+          {/* Asharvi Header and Description */}
           <section className="signup-header">
             <Link href="/" className="logo-link">
-              <h1 className="signup-title">Ashravi</h1>
+              <h1 className="signup-title">Asharvi</h1>
             </Link>
             <p className="signup-subtitle">
               Transform Your Parenting Journey with Evidence-Based Strategies
