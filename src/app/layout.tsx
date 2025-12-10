@@ -37,6 +37,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const metadata: Metadata = {
     title,
     description: snapshot.description,
+    icons: {
+      icon: [{ url: '/favicon.ico', sizes: 'any' }],
+      shortcut: '/favicon.ico',
+      apple: '/favicon.ico',
+    },
     keywords: snapshot.keywords,
     openGraph: {
       title,
