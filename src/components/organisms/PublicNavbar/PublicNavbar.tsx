@@ -78,7 +78,7 @@ export default function PublicNavbar(props: PublicNavbarProps) {
         <Link href="/" className="public-navbar-logo" onClick={closeMenu}>
           <img
             src="/images/logo.jpg"
-            alt="Ashravi Web"
+            alt="Asharvi Web"
             className="public-navbar-logo-image"
           />
         </Link>

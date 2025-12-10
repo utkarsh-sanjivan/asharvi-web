@@ -16,7 +16,7 @@ export default function HowItWorksSection({ steps }: HowItWorksSectionProps) {
     <section className="how-it-works-section">
       <div className="section-container">
         <div className="section-header">
-          <h2 className="section-title">How Ashravi Works</h2>
+          <h2 className="section-title">How Asharvi Works</h2>
           <p className="section-subtitle">
             Transform child behavior in four simple steps
           </p>

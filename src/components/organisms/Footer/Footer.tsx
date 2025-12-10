@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="footer-grid">
           {/* About */}
           <div className="footer-column">
-            <h3 className="footer-heading">About Ashravi</h3>
+            <h3 className="footer-heading">About Asharvi</h3>
             <p className="footer-description">
               Evidence-based child behavior strategies for parents, teachers, and counselors.
             </p>
@@ -70,7 +70,7 @@ export default function Footer() {
 
         <div className="footer-bottom">
           <p className="footer-copyright">
-            © {currentYear} Ashravi. All rights reserved.
+            © {currentYear} Asharvi. All rights reserved.
           </p>
           <p className="footer-reminder">
             Not a member yet? <Link href="/auth/signup" className="footer-link-highlight">Sign up for free</Link>

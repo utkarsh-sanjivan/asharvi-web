@@ -54,7 +54,7 @@ export default function WelcomePage() {
             </div>
           </div>
 
-          <h1 className="welcome-title">Welcome to Ashravi! 🎉</h1>
+          <h1 className="welcome-title">Welcome to Asharvi! 🎉</h1>
           <p className="welcome-message">
             Your account has been successfully created. Get ready to transform your parenting journey with evidence-based strategies and expert guidance.
           </p>
