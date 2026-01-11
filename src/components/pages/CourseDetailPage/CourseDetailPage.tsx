@@ -254,6 +254,18 @@ export default function CourseDetailPage({ courseId }: CourseDetailPageProps) {
     originalPrice && originalPrice > priceAmount
       ? formatCurrency(originalPrice, course.price?.currency)
       : null;
+  const isPaidCourse = priceAmount > 0;
+  const isPurchased = course.isPurchased ?? false;
+  const primaryActionLabel = isPaidCourse && !isPurchased ? 'Purchase course' : 'Start learning';
+
+  const handleStartLearning = () => {
+    if (isPaidCourse && !isPurchased) {
+      router.push(`/course/${courseId}/payment`);
+      return;
+    }
+
+    router.push(`/learn/${courseId}`);
+  };
 
   const sections: Section[] = Array.isArray(course.sections)
     ? (course.sections as Section[])
@@ -303,7 +315,8 @@ export default function CourseDetailPage({ courseId }: CourseDetailPageProps) {
             thumbnail={thumbnail}
             priceLabel={priceLabel}
             originalPriceLabel={originalPriceLabel}
-            onStartLearning={() => router.push(`/learn/${courseId}`)}
+            onStartLearning={handleStartLearning}
+            primaryActionLabel={primaryActionLabel}
             onWishlistToggle={handleWishlistToggle}
             wishlistLabel={wishlistLabel}
             wishlistDisabled={wishlistDisabled}
