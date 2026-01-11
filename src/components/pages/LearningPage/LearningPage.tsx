@@ -146,7 +146,8 @@ export default function LearningPage({ courseId }: { courseId: string }) {
 
   const course = cachedCourse.data?.data ?? fallbackCourse;
   const userProfile = useAppSelector(selectUserProfile);
-  const isPaidCourse = (course?.price?.amount ?? 0) > 0;
+  const priceAmount = course?.price?.amount ?? course?.originalPrice ?? 0;
+  const isPaidCourse = priceAmount > 0;
   const isPurchased = course?.isPurchased ?? false;
 
   const lectures = useMemo(() => flattenCourseLectures(course), [course]);
