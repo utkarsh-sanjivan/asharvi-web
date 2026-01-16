@@ -97,11 +97,12 @@ const normalizedCsrfCookieName = normalizeString(process.env.CSRF_COOKIE_NAME);
 const normalizedAuthCookieName = normalizeString(process.env.AUTH_SESSION_COOKIE_NAME);
 const normalizedDevtoolsEnabled = normalizeString(process.env.REDUX_DEVTOOLS_ENABLED);
 
+const isStagingEnv = normalizedPublicAppEnv === 'staging' || normalizedAppEnv === 'staging';
 const rawEnv = {
   NODE_ENV: normalizedNodeEnv,
   APP_ENV: normalizedAppEnv,
   NEXT_PUBLIC_APP_ENV: normalizedPublicAppEnv ?? normalizedAppEnv,
-  NEXT_PUBLIC_API_BASE: normalizedApiBase,
+  NEXT_PUBLIC_API_BASE: normalizedApiBase ?? (isStagingEnv ? '/api/v1' : undefined),
   NEXT_PUBLIC_SITE_URL: normalizedSiteUrl,
   API_RATE_LIMIT_MAX: normalizedRateLimitMax ? Number(normalizedRateLimitMax) : undefined,
   API_RATE_LIMIT_WINDOW_MS: normalizedRateLimitWindow ? Number(normalizedRateLimitWindow) : undefined,
