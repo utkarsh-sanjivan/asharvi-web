@@ -45,9 +45,9 @@ const getInternalApiBase = (): string => {
 export const dynamic = 'force-dynamic';
 
 type RouteParams = {
-  params: {
+  params: Promise<{
     path?: string[];
-  };
+  }>;
 };
 
 async function proxy(request: NextRequest, { params }: RouteParams) {
@@ -57,7 +57,8 @@ async function proxy(request: NextRequest, { params }: RouteParams) {
 
     // 2) Build upstream URL
     const internalBase = getInternalApiBase(); // e.g. http://43.204.229.198:3000
-    const segments = params.path ?? [];
+    const resolvedParams = await params;
+    const segments = resolvedParams.path ?? [];
     const path = segments.join('/');
     const upstreamUrl = new URL(path ? `/${path}` : '/', internalBase);
 
