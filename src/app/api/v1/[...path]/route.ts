@@ -70,9 +70,10 @@ const getErrorMessage = (error: unknown): string => {
 
 const handler = async (
   request: NextRequest,
-  { params }: { params: { path: string[] } },
+  context: { params: Promise<{ path: string[] }> },
 ): Promise<Response> => {
-  const upstreamUrl = buildUpstreamUrl(request, params.path ?? []);
+  const { path = [] } = await context.params;
+  const upstreamUrl = buildUpstreamUrl(request, path);
   const headers = getForwardHeaders(request);
   const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
   const controller = new AbortController();
