@@ -23,6 +23,7 @@ interface CourseHeroProps {
   priceLabel: string;
   originalPriceLabel?: string | null;
   onStartLearning: () => void;
+  primaryActionLabel?: string;
   onWishlistToggle?: () => void;
   wishlistLabel?: string;
   wishlistDisabled?: boolean;
@@ -44,6 +45,7 @@ export default function CourseHero({
   priceLabel,
   originalPriceLabel,
   onStartLearning,
+  primaryActionLabel,
   onWishlistToggle,
   wishlistLabel,
   wishlistDisabled,
@@ -56,6 +58,7 @@ export default function CourseHero({
   const resolvedWishlistLabel =
     wishlistLabel ?? (isWishlisted ? 'Remove from wishlist' : 'Add to wishlist');
   const wishlistButtonDisabled = wishlistDisabled ?? !onWishlistToggle;
+  const actionLabel = primaryActionLabel ?? 'Start learning';
 
   return (
     <section className="course-detail-hero">
@@ -92,7 +95,7 @@ export default function CourseHero({
 
         <div className="course-detail-actions">
           <Button variant="primary" size="lg" onClick={onStartLearning}>
-            Start learning
+            {actionLabel}
           </Button>
           <Button
             variant="secondary"

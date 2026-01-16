@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import PublicNavbar from '@/components/organisms/PublicNavbar';
 import Footer from '@/components/organisms/Footer';
@@ -122,6 +123,7 @@ interface NoteEntry {
 
 export default function LearningPage({ courseId }: { courseId: string }) {
   const { isAuthenticated, isChecking } = useAuthGuard({ redirectTo: '/auth/login' });
+  const router = useRouter();
 
   const featureKeys = useMemo<FeatureModuleKey[]>(
     () => (process.env.NODE_ENV !== 'production' ? ['courses', 'wishlist', 'mock'] : ['courses', 'wishlist']),
@@ -144,6 +146,9 @@ export default function LearningPage({ courseId }: { courseId: string }) {
 
   const course = cachedCourse.data?.data ?? fallbackCourse;
   const userProfile = useAppSelector(selectUserProfile);
+  const priceAmount = course?.price?.amount ?? course?.originalPrice ?? 0;
+  const isPaidCourse = priceAmount > 0;
+  const isPurchased = course?.isPurchased ?? false;
 
   const lectures = useMemo(() => flattenCourseLectures(course), [course]);
   const initialLecture = useMemo(
@@ -346,6 +351,16 @@ export default function LearningPage({ courseId }: { courseId: string }) {
       : undefined;
 
   const isLoadingState = isChecking || !featuresReady || (!course && isFetchingFallback);
+
+  useEffect(() => {
+    if (!course || isChecking || !featuresReady) {
+      return;
+    }
+
+    if (isPaidCourse && !isPurchased) {
+      router.replace(`/course/${courseId}/payment`);
+    }
+  }, [course, courseId, featuresReady, isChecking, isPaidCourse, isPurchased, router]);
 
   if (isLoadingState) {
     return (
