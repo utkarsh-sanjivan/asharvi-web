@@ -8,7 +8,12 @@ export async function GET(request: NextRequest) {
   try {
     const accessToken = await getAccessTokenFromCookies();
     const search = request.nextUrl.search ?? '';
-    const { response, data, rawBody } = await callCoursesApi(`/courses${search}`, { method: 'GET' }, accessToken);
+    const { response, data, rawBody } = await callCoursesApi(
+      `/courses${search}`,
+      { method: 'GET' },
+      accessToken,
+      request.nextUrl.origin
+    );
 
     if (!response.ok) {
       const message = extractErrorMessage(data ?? rawBody, 'Failed to fetch courses');

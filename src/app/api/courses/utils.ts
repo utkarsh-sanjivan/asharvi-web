@@ -34,10 +34,24 @@ export const extractErrorMessage = (payload: unknown, fallback: string): string 
   return fallback;
 };
 
+const resolveApiBase = (origin?: string): string => {
+  const base = env.NEXT_PUBLIC_API_BASE;
+
+  if (base.startsWith('/')) {
+    if (!origin) {
+      throw new Error('NEXT_PUBLIC_API_BASE is relative; provide request origin to resolve it.');
+    }
+    return new URL(base, origin).toString();
+  }
+
+  return base;
+};
+
 export async function callCoursesApi<T = unknown>(
   path: string,
   init: RequestInit,
-  accessToken?: string | null
+  accessToken?: string | null,
+  origin?: string
 ): Promise<ProxyResponse<T>> {
   const headers = new Headers(init.headers ?? {});
 
@@ -51,7 +65,8 @@ export async function callCoursesApi<T = unknown>(
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${env.NEXT_PUBLIC_API_BASE}${path}`, {
+  const apiBase = resolveApiBase(origin);
+  const response = await fetch(`${apiBase}${path}`, {
     ...init,
     headers,
     cache: 'no-store',

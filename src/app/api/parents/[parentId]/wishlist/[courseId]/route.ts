@@ -29,7 +29,8 @@ export async function DELETE(
     const { response, data, rawBody } = await callCoursesApi(
       `/parents/${parentId}/wishlist/${courseId}`,
       { method: 'DELETE' },
-      accessToken
+      accessToken,
+      _request.nextUrl.origin
     );
 
     if (!response.ok) {
