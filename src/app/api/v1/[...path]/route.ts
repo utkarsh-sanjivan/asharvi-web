@@ -33,12 +33,10 @@ const assertStagingOnly = (): void => {
   }
 };
 
-const getInternalApiBase = (): string => {
+const getInternalApiBase = (): string | undefined => {
   const internalApiBase = process.env.INTERNAL_API_BASE;
-  if (!internalApiBase) {
-    throw new Error('INTERNAL_API_BASE is not set for the API proxy route.');
-  }
-  return internalApiBase;
+  const trimmed = internalApiBase?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
 };
 
 // Make sure this is always dynamic and not cached by Next
@@ -55,23 +53,33 @@ async function proxy(request: NextRequest, { params }: RouteParams) {
     // 1) Safety: staging only
     assertStagingOnly();
 
-    // 2) Build upstream URL
-    const internalBase = getInternalApiBase(); // e.g. http://43.204.229.198:3000
+    // 2) Validate upstream base
+    const internalBase = getInternalApiBase(); // e.g. http://43.204.229.198:3000/api/v1
+    if (!internalBase) {
+      return NextResponse.json(
+        { ok: false, error: 'INTERNAL_API_BASE is not set for the API proxy route.' },
+        { status: 502 },
+      );
+    }
+
+    // 3) Build upstream URL
     const resolvedParams = await params;
     const segments = resolvedParams.path ?? [];
     const path = segments.join('/');
-    const upstreamUrl = new URL(path ? `/${path}` : '/', internalBase);
+    const baseUrl = new URL(internalBase);
+    const baseWithSlash = baseUrl.toString().replace(/\/?$/, '/');
+    const upstreamUrl = new URL(path, baseWithSlash);
 
     // Preserve query string
     upstreamUrl.search = request.nextUrl.search || '';
 
-    // 3) Prepare headers (strip hop-by-hop + length/encoding)
+    // 4) Prepare headers (strip hop-by-hop + length/encoding)
     const reqHeaders = new Headers(request.headers);
     for (const h of REQUEST_STRIP_HEADERS) {
       reqHeaders.delete(h);
     }
 
-    // 4) Prepare body (only for non-GET/HEAD)
+    // 5) Prepare body (only for non-GET/HEAD)
     let body: BodyInit | null | undefined;
     if (!['GET', 'HEAD'].includes(request.method.toUpperCase())) {
       // For JSON / form posts this is fine
@@ -79,7 +87,7 @@ async function proxy(request: NextRequest, { params }: RouteParams) {
       body = buf.byteLength > 0 ? buf : undefined;
     }
 
-    // 5) Timeout handling
+    // 6) Timeout handling
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(),
@@ -95,7 +103,7 @@ async function proxy(request: NextRequest, { params }: RouteParams) {
 
     clearTimeout(timeout);
 
-    // 6) Copy upstream headers back, minus hop-by-hop
+    // 7) Copy upstream headers back, minus hop-by-hop
     const resHeaders = new Headers(upstreamResponse.headers);
     for (const h of HOP_BY_HOP_HEADERS) {
       resHeaders.delete(h);
