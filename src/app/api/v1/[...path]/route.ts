@@ -72,11 +72,12 @@ function buildUpstreamHeaders(req: NextRequest): Headers {
   return headers;
 }
 
-async function proxy(req: NextRequest, context: { params: { path?: string[] } }) {
+async function proxy(req: NextRequest, context: { params: Promise<{ path?: string[] }> }) {
   try {
     assertStagingOnly();
 
-    const upstreamUrl = buildUpstreamUrl(req, context.params.path);
+    const { path } = await context.params;
+    const upstreamUrl = buildUpstreamUrl(req, path);
     const headers = buildUpstreamHeaders(req);
     const method = req.method;
 
@@ -136,24 +137,24 @@ async function proxy(req: NextRequest, context: { params: { path?: string[] } })
 }
 
 // Wire all HTTP methods to the same proxy handler
-export async function GET(req: NextRequest, ctx: { params: { path?: string[] } }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
   return proxy(req, ctx);
 }
-export async function POST(req: NextRequest, ctx: { params: { path?: string[] } }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
   return proxy(req, ctx);
 }
-export async function PUT(req: NextRequest, ctx: { params: { path?: string[] } }) {
+export async function PUT(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
   return proxy(req, ctx);
 }
-export async function PATCH(req: NextRequest, ctx: { params: { path?: string[] } }) {
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
   return proxy(req, ctx);
 }
-export async function DELETE(req: NextRequest, ctx: { params: { path?: string[] } }) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
   return proxy(req, ctx);
 }
-export async function HEAD(req: NextRequest, ctx: { params: { path?: string[] } }) {
+export async function HEAD(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
   return proxy(req, ctx);
 }
-export async function OPTIONS(req: NextRequest, ctx: { params: { path?: string[] } }) {
+export async function OPTIONS(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
   return proxy(req, ctx);
 }
