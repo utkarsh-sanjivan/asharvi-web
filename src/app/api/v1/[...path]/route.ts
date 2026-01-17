@@ -1,5 +1,4 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const HOP_BY_HOP_HEADERS = new Set([
   'connection',
@@ -10,137 +9,151 @@ const HOP_BY_HOP_HEADERS = new Set([
   'trailer',
   'transfer-encoding',
   'upgrade',
-  'host',
 ]);
 
-const REQUEST_STRIP_HEADERS = new Set<string>([
+const REQUEST_STRIP_HEADERS = new Set([
   ...HOP_BY_HOP_HEADERS,
-  'accept-encoding',
+  'host',
   'content-length',
+  'accept-encoding',
 ]);
 
-const getProxyTimeoutMs = (): number => {
-  const timeoutMs = Number.parseInt(process.env.PROXY_TIMEOUT_MS ?? '', 10);
-  return Number.isNaN(timeoutMs) ? 8000 : timeoutMs;
-};
+const DEFAULT_TIMEOUT_MS = 8000;
 
-const assertStagingOnly = (): void => {
-  const appEnv = process.env.NEXT_PUBLIC_APP_ENV ?? process.env.APP_ENV;
-  if (appEnv !== 'staging') {
-    throw new Error(
-      `API proxy route is intended for staging only (got APP_ENV=${appEnv ?? 'undefined'}).`,
-    );
+function getProxyTimeoutMs(): number {
+  const raw = process.env.PROXY_TIMEOUT_MS;
+  const parsed = raw ? Number.parseInt(raw, 10) : NaN;
+  return Number.isNaN(parsed) ? DEFAULT_TIMEOUT_MS : parsed;
+}
+
+function assertStagingOnly() {
+  if (process.env.NEXT_PUBLIC_APP_ENV !== 'staging') {
+    throw new Error('API proxy route is intended for staging only.');
   }
-};
+}
 
-const getInternalApiBase = (): string | undefined => {
-  const internalApiBase = process.env.INTERNAL_API_BASE;
-  const trimmed = internalApiBase?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : undefined;
-};
+function getInternalApiBase(): string {
+  const base = process.env.INTERNAL_API_BASE;
+  if (!base) {
+    throw new Error('INTERNAL_API_BASE is not set for the API proxy route.');
+  }
 
-// Make sure this is always dynamic and not cached by Next
-export const dynamic = 'force-dynamic';
+  // host + optional port only, no trailing slash
+  return base.replace(/\/+$/, '');
+}
 
-type RouteParams = {
-  params: Promise<{
-    path?: string[];
-  }>;
-};
+function buildUpstreamUrl(req: NextRequest, pathSegments: string[] | undefined): string {
+  const internalBase = getInternalApiBase();
 
-async function proxy(request: NextRequest, { params }: RouteParams) {
+  // Always prefix with /api/v1 on the backend
+  const apiPrefix = '/api/v1';
+
+  const suffix = pathSegments && pathSegments.length > 0
+    ? `/${pathSegments.join('/')}`
+    : '';
+
+  const url = new URL(internalBase);
+  url.pathname = `${apiPrefix}${suffix}`;
+  url.search = req.nextUrl.search; // preserve query string
+
+  return url.toString();
+}
+
+function buildUpstreamHeaders(req: NextRequest): Headers {
+  const headers = new Headers();
+
+  req.headers.forEach((value, key) => {
+    const lower = key.toLowerCase();
+    if (!REQUEST_STRIP_HEADERS.has(lower)) {
+      headers.set(key, value);
+    }
+  });
+
+  return headers;
+}
+
+async function proxy(req: NextRequest, context: { params: { path?: string[] } }) {
   try {
-    // 1) Safety: staging only
     assertStagingOnly();
 
-    // 2) Validate upstream base
-    const internalBase = getInternalApiBase(); // e.g. http://43.204.229.198:3000/api/v1
-    if (!internalBase) {
-      return NextResponse.json(
-        { ok: false, error: 'INTERNAL_API_BASE is not set for the API proxy route.' },
-        { status: 502 },
-      );
-    }
+    const upstreamUrl = buildUpstreamUrl(req, context.params.path);
+    const headers = buildUpstreamHeaders(req);
+    const method = req.method;
 
-    // 3) Build upstream URL
-    const resolvedParams = await params;
-    const segments = resolvedParams.path ?? [];
-    const path = segments.join('/');
-    const baseUrl = new URL(internalBase);
-    const baseWithSlash = baseUrl.toString().replace(/\/?$/, '/');
-    const upstreamUrl = new URL(path, baseWithSlash);
-
-    // Preserve query string
-    upstreamUrl.search = request.nextUrl.search || '';
-
-    // 4) Prepare headers (strip hop-by-hop + length/encoding)
-    const reqHeaders = new Headers(request.headers);
-    for (const h of REQUEST_STRIP_HEADERS) {
-      reqHeaders.delete(h);
-    }
-
-    // 5) Prepare body (only for non-GET/HEAD)
-    let body: BodyInit | null | undefined;
-    if (!['GET', 'HEAD'].includes(request.method.toUpperCase())) {
-      // For JSON / form posts this is fine
-      const buf = await request.arrayBuffer();
-      body = buf.byteLength > 0 ? buf : undefined;
-    }
-
-    // 6) Timeout handling
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      getProxyTimeoutMs(),
-    );
+    const timeoutMs = getProxyTimeoutMs();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    const upstreamResponse = await fetch(upstreamUrl.toString(), {
-      method: request.method,
-      headers: reqHeaders,
-      body,
+    const init: RequestInit = {
+      method,
+      headers,
+      redirect: 'manual',
       signal: controller.signal,
-    });
+    };
 
-    clearTimeout(timeout);
-
-    // 7) Copy upstream headers back, minus hop-by-hop
-    const resHeaders = new Headers(upstreamResponse.headers);
-    for (const h of HOP_BY_HOP_HEADERS) {
-      resHeaders.delete(h);
+    // Only pass a body for non-GET / non-HEAD
+    if (method !== 'GET' && method !== 'HEAD') {
+      // NextRequest.body is a ReadableStream; clone via req.text or req.arrayBuffer
+      const body = await req.text();
+      init.body = body;
     }
 
-    // Stream body + status back to client
-    return new NextResponse(upstreamResponse.body, {
-      status: upstreamResponse.status,
-      headers: resHeaders,
+    const upstreamRes = await fetch(upstreamUrl, init);
+    clearTimeout(timeoutId);
+
+    // Copy response headers, stripping hop-by-hop ones
+    const respHeaders = new Headers();
+    upstreamRes.headers.forEach((value, key) => {
+      const lower = key.toLowerCase();
+      if (!HOP_BY_HOP_HEADERS.has(lower)) {
+        respHeaders.set(key, value);
+      }
     });
-  } catch (err: unknown) {
+
+    return new Response(upstreamRes.body, {
+      status: upstreamRes.status,
+      statusText: upstreamRes.statusText,
+      headers: respHeaders,
+    });
+  } catch (err: any) {
     console.error('Staging API proxy error:', err);
 
-    const isAbort =
-      err instanceof Error && (err.name === 'AbortError' || err.message?.includes('aborted'));
+    const message =
+      err?.message ?? 'Upstream request failed in staging API proxy.';
 
-    const status = isAbort ? 504 : 502;
+    // Distinguish misconfiguration vs upstream failure
+    const isConfigError =
+      message.includes('INTERNAL_API_BASE is not set') ||
+      message.includes('staging only');
+
+    const status = isConfigError ? 502 : 502;
 
     return NextResponse.json(
-      {
-        ok: false,
-        error:
-          err instanceof Error
-            ? err.message
-            : 'Unknown error in staging API proxy',
-      },
+      { ok: false, error: message },
       { status },
     );
   }
 }
 
-// Wire this handler to all HTTP methods you care about
-export {
-  proxy as GET,
-  proxy as POST,
-  proxy as PUT,
-  proxy as PATCH,
-  proxy as DELETE,
-  proxy as OPTIONS,
-};
+// Wire all HTTP methods to the same proxy handler
+export async function GET(req: NextRequest, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
+}
+export async function POST(req: NextRequest, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
+}
+export async function PUT(req: NextRequest, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
+}
+export async function PATCH(req: NextRequest, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
+}
+export async function DELETE(req: NextRequest, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
+}
+export async function HEAD(req: NextRequest, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
+}
+export async function OPTIONS(req: NextRequest, ctx: { params: { path?: string[] } }) {
+  return proxy(req, ctx);
+}
