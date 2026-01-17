@@ -2,12 +2,23 @@ import { createApi, fetchBaseQuery, retry } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs } from '@reduxjs/toolkit/query';
 import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
-import { env } from '@/config/env';
+import { API_BASE, env } from '@/config/env';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 type HeadersLike = Headers & { toJSON?: () => Record<string, string> };
 const hasClientDocument = () => typeof document !== 'undefined';
+const resolveApiUrl = (path: string): string => {
+  if (API_BASE.startsWith('/')) {
+    const origin =
+      typeof window !== 'undefined' && window.location.origin
+        ? window.location.origin
+        : env.NEXT_PUBLIC_SITE_URL;
+    return `${origin}${API_BASE}${path}`;
+  }
+
+  return `${API_BASE}${path}`;
+};
 
 const ensureHeaders = (candidate: FetchArgs['headers']): HeadersLike => {
   if (candidate instanceof Headers) {
@@ -202,7 +213,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, ApiError> = 
 
     const refreshResult = await rawBaseQuery(
       {
-        url: '/api/auth/refresh',
+        url: resolveApiUrl('/auth/refresh'),
         method: 'POST',
       },
       api,

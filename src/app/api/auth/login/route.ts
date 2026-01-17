@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { env } from '@/config/env';
+import { API_BASE } from '@/config/env';
 import { setAuthCookies } from '@/lib/auth-cookies';
 
 interface LoginRequestBody {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const upstreamResponse = await fetch(`${env.NEXT_PUBLIC_API_BASE}/auth/login`, {
+    const upstreamResponse = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

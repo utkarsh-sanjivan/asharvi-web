@@ -16,6 +16,7 @@ import { coursesApi, useCourseDetailQuery } from '@/store/api/courses.api';
 import { selectUserProfile } from '@/store/selectors/user.selectors';
 import { selectMockCourses } from '@/store/selectors/mock.selectors';
 import type { PDFMetadata, Course, Section } from '@/types';
+import { API_BASE } from '@/config/env';
 
 import './index.css';
 import LearningPlayerSection from '@/components/organisms/LearningPlayerSection';
@@ -36,7 +37,7 @@ const resolveMediaUrl = (url?: string | null): string | undefined => {
     return url;
   }
 
-  const base = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? '';
+  const base = API_BASE.replace(/\/$/, '');
   return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
@@ -283,7 +284,7 @@ export default function LearningPage({ courseId }: { courseId: string }) {
 
       setMarkingLectureId(lectureId);
       try {
-        await fetch('/api/progress', {
+        await fetch(`${API_BASE}/progress`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',

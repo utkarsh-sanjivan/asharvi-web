@@ -1,4 +1,4 @@
-import { env } from '@/config/env';
+import { API_BASE, env } from '@/config/env';
 import { apiService } from '@/services/api.service';
 import { setUser, clearUser } from '@/store/user.slice';
 import type {
@@ -21,11 +21,23 @@ const normalizeUser = (payload: any): AuthUser => ({
   updatedAt: payload?.updatedAt,
 });
 
+const resolveApiUrl = (path: string): string => {
+  if (API_BASE.startsWith('/')) {
+    const origin =
+      typeof window !== 'undefined' && window.location.origin
+        ? window.location.origin
+        : env.NEXT_PUBLIC_SITE_URL;
+    return `${origin}${API_BASE}${path}`;
+  }
+
+  return `${API_BASE}${path}`;
+};
+
 export const authApi = apiService.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({
-        url: '/api/auth/login',
+        url: resolveApiUrl('/auth/login'),
         method: 'POST',
         body: credentials,
       }),
@@ -57,7 +69,7 @@ export const authApi = apiService.injectEndpoints({
     }),
     logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
-        url: '/api/auth/logout',
+        url: resolveApiUrl('/auth/logout'),
         method: 'POST',
       }),
       invalidatesTags: ['Auth'],
@@ -75,7 +87,7 @@ export const authApi = apiService.injectEndpoints({
     }),
     register: builder.mutation<RegisterResponse, RegisterRequest>({
       query: (payload) => ({
-        url: '/api/auth/register',
+        url: resolveApiUrl('/auth/register'),
         method: 'POST',
         body: payload,
       }),
@@ -106,7 +118,7 @@ export const authApi = apiService.injectEndpoints({
     }),
     profile: builder.query<ProfileResponse, void>({
       query: () => ({
-        url: '/api/auth/me',
+        url: resolveApiUrl('/auth/me'),
         method: 'GET',
       }),
       providesTags: ['Auth'],
@@ -138,7 +150,7 @@ export const authApi = apiService.injectEndpoints({
     }),
     refresh: builder.mutation<RefreshResponse, void>({
       query: () => ({
-        url: '/api/auth/refresh',
+        url: resolveApiUrl('/auth/refresh'),
         method: 'POST',
       }),
       invalidatesTags: ['Auth'],

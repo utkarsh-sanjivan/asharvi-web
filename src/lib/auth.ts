@@ -1,4 +1,4 @@
-import { env } from '@/config/env';
+import { API_BASE, env } from '@/config/env';
 import { clearAuthCookies, getAccessTokenFromCookies } from './auth-cookies';
 
 export interface User {
@@ -7,6 +7,14 @@ export interface User {
   email: string;
   role: string;
 }
+
+const resolveApiUrl = (path: string): string => {
+  if (API_BASE.startsWith('/')) {
+    return `${env.NEXT_PUBLIC_SITE_URL}${API_BASE}${path}`;
+  }
+
+  return `${API_BASE}${path}`;
+};
 
 /**
  * Get current user from server-side
@@ -21,7 +29,7 @@ export async function getUser(): Promise<User | null> {
 
   try {
     // Call API to get user profile
-    const response = await fetch(`${env.NEXT_PUBLIC_API_BASE}/auth/profile`, {
+    const response = await fetch(resolveApiUrl('/auth/profile'), {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
@@ -70,7 +78,7 @@ export async function getUserById(userId: string): Promise<User | null> {
       return null;
     }
 
-    const response = await fetch(`${env.NEXT_PUBLIC_API_BASE}/users/${userId}`, {
+    const response = await fetch(resolveApiUrl(`/users/${userId}`), {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',

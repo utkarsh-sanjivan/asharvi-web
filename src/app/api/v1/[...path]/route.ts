@@ -26,32 +26,11 @@ function getProxyTimeoutMs(): number {
   return Number.isNaN(parsed) ? DEFAULT_TIMEOUT_MS : parsed;
 }
 
-function assertStagingOnly() {
-  if (process.env.NEXT_PUBLIC_APP_ENV !== 'staging') {
-    throw new Error('API proxy route is intended for staging only.');
-  }
-}
-
-/**
- * Returns the base URL for the internal ECS API in staging.
- *
- * We *prefer* INTERNAL_API_BASE from env, but if it is missing (which is what
- * you are seeing right now in Lambda), we fallback to the known staging host.
- */
-function getInternalApiBase(): string {
-  const fromEnv = process.env.INTERNAL_API_BASE;
-
-  // Fallback so we don't break just because the Lambda env isn't wired
-  const base = fromEnv && fromEnv.trim().length > 0
-    ? fromEnv.trim()
-    : 'http://43.204.229.198:3000';
-
-  return base.replace(/\/+$/, '');
-}
-
-
-function buildUpstreamUrl(req: NextRequest, pathSegments: string[] | undefined): string {
-  const internalBase = getInternalApiBase();
+function buildUpstreamUrl(
+  req: NextRequest,
+  internalBase: string,
+  pathSegments: string[] | undefined
+): string {
 
   // Always prefix with /api/v1 on the backend
   const apiPrefix = '/api/v1';
@@ -82,10 +61,15 @@ function buildUpstreamHeaders(req: NextRequest): Headers {
 
 async function proxy(req: NextRequest, context: { params: Promise<{ path?: string[] }> }) {
   try {
-    assertStagingOnly();
+    const internalBase = process.env.INTERNAL_API_BASE?.trim().replace(/\/+$/, '');
+    if (!internalBase) {
+      const errorMessage = 'INTERNAL_API_BASE is not set for the API proxy route.';
+      console.error(errorMessage);
+      return NextResponse.json({ ok: false, error: errorMessage }, { status: 500 });
+    }
 
     const { path } = await context.params;
-    const upstreamUrl = buildUpstreamUrl(req, path);
+    const upstreamUrl = buildUpstreamUrl(req, internalBase, path);
     const headers = buildUpstreamHeaders(req);
     const method = req.method;
 
@@ -125,21 +109,14 @@ async function proxy(req: NextRequest, context: { params: Promise<{ path?: strin
       headers: respHeaders,
     });
   } catch (err: any) {
-    console.error('Staging API proxy error:', err);
+    console.error('API proxy error:', err);
 
     const message =
-      err?.message ?? 'Upstream request failed in staging API proxy.';
-
-    // Distinguish misconfiguration vs upstream failure
-    const isConfigError =
-      message.includes('INTERNAL_API_BASE is not set') ||
-      message.includes('staging only');
-
-    const status = isConfigError ? 502 : 502;
+      err?.message ?? 'Upstream request failed in API proxy.';
 
     return NextResponse.json(
       { ok: false, error: message },
-      { status },
+      { status: 502 },
     );
   }
 }

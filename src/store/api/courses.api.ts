@@ -1,4 +1,4 @@
-import { env } from '@/config/env';
+import { API_BASE, env } from '@/config/env';
 import { transformCourse, transformCourses, transformFiltersToQuery } from '@/lib/courseAdapter';
 import { apiService } from '@/services/api.service';
 import { addToWishlist, removeFromWishlist, markWishlistPending, clearWishlistPending } from '@/store/wishlist.slice';
@@ -59,12 +59,16 @@ const normalizeDetailResponse = (payload: any): CourseDetailResponse => ({
   ),
 });
 
-const resolveInternalApiUrl = (path: string) => {
-  if (typeof window !== 'undefined' && window.location.origin) {
-    return `${window.location.origin}${path}`;
+const resolveApiUrl = (path: string) => {
+  if (API_BASE.startsWith('/')) {
+    const origin =
+      typeof window !== 'undefined' && window.location.origin
+        ? window.location.origin
+        : env.NEXT_PUBLIC_SITE_URL;
+    return `${origin}${API_BASE}${path}`;
   }
 
-  return `${env.NEXT_PUBLIC_SITE_URL}${path}`;
+  return `${API_BASE}${path}`;
 };
 
 export const coursesApi = apiService.injectEndpoints({
@@ -72,7 +76,7 @@ export const coursesApi = apiService.injectEndpoints({
     list: builder.query<CourseListResponse, CourseListRequest | void>({
       async queryFn(params, queryApi, _extraOptions, baseQuery) {
         const queryString = buildQueryString(params ?? {});
-        const url = resolveInternalApiUrl(`/api/courses${queryString}`);
+        const url = resolveApiUrl(`/courses${queryString}`);
 
         const result = await baseQuery({ url, method: 'GET' });
 
@@ -92,7 +96,7 @@ export const coursesApi = apiService.injectEndpoints({
     }),
     detail: builder.query<CourseDetailResponse, string>({
       async queryFn(courseId, queryApi, _extraOptions, baseQuery) {
-        const url = resolveInternalApiUrl(`/api/courses/${courseId}`);
+        const url = resolveApiUrl(`/courses/${courseId}`);
 
         const result = await baseQuery({ url, method: 'GET' });
 
@@ -106,7 +110,7 @@ export const coursesApi = apiService.injectEndpoints({
     }),
     wishlist: builder.query<{ ids: string[]; courses: any[] }, string>({
       async queryFn(parentId, _queryApi, _extraOptions, baseQuery) {
-        const url = resolveInternalApiUrl(`/api/parents/${encodeURIComponent(parentId)}/wishlist`);
+        const url = resolveApiUrl(`/parents/${encodeURIComponent(parentId)}/wishlist`);
         const result = await baseQuery({ url, method: 'GET' });
 
         if (result.error) {
@@ -127,11 +131,11 @@ export const coursesApi = apiService.injectEndpoints({
     toggleWishlist: builder.mutation<{ status: 'added' | 'removed' }, { parentId: string; courseId: string; action: 'add' | 'remove' }>({
       query: ({ parentId, courseId, action }) => {
         const method: 'POST' | 'DELETE' = action === 'add' ? 'POST' : 'DELETE';
-        const parentPath = `/api/parents/${parentId}/wishlist`;
+        const parentPath = `/parents/${parentId}/wishlist`;
         const url =
           method === 'POST'
-            ? resolveInternalApiUrl(parentPath)
-            : resolveInternalApiUrl(`${parentPath}/${courseId}`);
+            ? resolveApiUrl(parentPath)
+            : resolveApiUrl(`${parentPath}/${courseId}`);
         const request: {
           url: string;
           method: 'POST' | 'DELETE';
