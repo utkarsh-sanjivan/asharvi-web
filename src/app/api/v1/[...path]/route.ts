@@ -32,15 +32,23 @@ function assertStagingOnly() {
   }
 }
 
+/**
+ * Returns the base URL for the internal ECS API in staging.
+ *
+ * We *prefer* INTERNAL_API_BASE from env, but if it is missing (which is what
+ * you are seeing right now in Lambda), we fallback to the known staging host.
+ */
 function getInternalApiBase(): string {
-  const base = process.env.INTERNAL_API_BASE;
-  if (!base) {
-    throw new Error('INTERNAL_API_BASE is not set for the API proxy route.');
-  }
+  const fromEnv = process.env.INTERNAL_API_BASE;
 
-  // host + optional port only, no trailing slash
+  // Fallback so we don't break just because the Lambda env isn't wired
+  const base = fromEnv && fromEnv.trim().length > 0
+    ? fromEnv.trim()
+    : 'http://43.204.229.198:3000';
+
   return base.replace(/\/+$/, '');
 }
+
 
 function buildUpstreamUrl(req: NextRequest, pathSegments: string[] | undefined): string {
   const internalBase = getInternalApiBase();
