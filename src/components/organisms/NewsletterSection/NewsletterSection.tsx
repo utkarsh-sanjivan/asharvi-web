@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { API_BASE } from '@/config/env';
 import Button from '@/components/atoms/Button';
 import './index.css';
 
@@ -15,7 +16,7 @@ export default function NewsletterSection() {
 
     try {
       // TODO: Integrate with Mailchimp or ConvertKit
-      const response = await fetch('/api/newsletter/subscribe', {
+      const response = await fetch(`${API_BASE}/newsletter/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

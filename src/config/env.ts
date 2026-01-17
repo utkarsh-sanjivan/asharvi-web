@@ -39,7 +39,7 @@ const schema: EnvSchema = {
     errorMessage: 'NEXT_PUBLIC_APP_ENV must be one of development, staging, or production.',
   },
   NEXT_PUBLIC_API_BASE: {
-    default: 'http://localhost:8080/api/v1',
+    default: '/api/v1',
     validate: (value: unknown): value is string => typeof value === 'string' && value.length > 0,
     errorMessage: 'NEXT_PUBLIC_API_BASE must be a non-empty string.',
   },
@@ -98,11 +98,16 @@ const normalizedAuthCookieName = normalizeString(process.env.AUTH_SESSION_COOKIE
 const normalizedDevtoolsEnabled = normalizeString(process.env.REDUX_DEVTOOLS_ENABLED);
 
 const isStagingEnv = normalizedPublicAppEnv === 'staging' || normalizedAppEnv === 'staging';
+const normalizeApiBase = (value: string) => value.replace(/\/+$/, '');
+const DEFAULT_API_BASE = '/api/v1';
+export const API_BASE = normalizeApiBase(
+  normalizedApiBase ?? (isStagingEnv ? DEFAULT_API_BASE : DEFAULT_API_BASE)
+);
 const rawEnv = {
   NODE_ENV: normalizedNodeEnv,
   APP_ENV: normalizedAppEnv,
   NEXT_PUBLIC_APP_ENV: normalizedPublicAppEnv ?? normalizedAppEnv,
-  NEXT_PUBLIC_API_BASE: normalizedApiBase ?? (isStagingEnv ? '/api/v1' : undefined),
+  NEXT_PUBLIC_API_BASE: normalizedApiBase ?? (isStagingEnv ? DEFAULT_API_BASE : undefined),
   NEXT_PUBLIC_SITE_URL: normalizedSiteUrl,
   API_RATE_LIMIT_MAX: normalizedRateLimitMax ? Number(normalizedRateLimitMax) : undefined,
   API_RATE_LIMIT_WINDOW_MS: normalizedRateLimitWindow ? Number(normalizedRateLimitWindow) : undefined,
