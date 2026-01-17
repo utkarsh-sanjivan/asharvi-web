@@ -36,7 +36,8 @@ export async function POST(
         body: rawBody && rawBody.length > 0 ? rawBody : undefined,
         headers,
       },
-      accessToken
+      accessToken,
+      request.nextUrl.origin
     );
 
     if (!response.ok) {
@@ -71,7 +72,8 @@ export async function GET(
     const { response, data, rawBody } = await callCoursesApi(
       `/parents/${parentId}/wishlist`,
       { method: 'GET' },
-      accessToken
+      accessToken,
+      _request.nextUrl.origin
     );
 
     if (!response.ok) {

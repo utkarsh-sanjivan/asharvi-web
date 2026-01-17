@@ -32,7 +32,8 @@ async function forwardWishlistRequest(
       body: body && body.length > 0 ? body : undefined,
       headers,
     },
-    accessToken
+    accessToken,
+    request.nextUrl.origin
   );
 
   if (!response.ok) {
