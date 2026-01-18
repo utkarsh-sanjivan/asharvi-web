@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +12,7 @@ import StarIcon from '@/components/icons/StarIcon';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useFeatureModules } from '@/hooks/useFeatureModule';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { env } from '@/config/env';
 import type { FeatureModuleKey } from '@/store/modules/registry';
 import { useCourseDetailQuery, useToggleWishlistMutation, useWishlistQuery } from '@/store/api/courses.api';
 import { selectMockCourses } from '@/store/selectors/mock.selectors';
@@ -21,6 +22,7 @@ import {
   makeSelectIsWishlistPending,
 } from '@/store/selectors/wishlist.selectors';
 import type { Course, Section } from '@/types';
+import { isStagingPurchaseMarked } from '@/lib/staging-purchase';
 
 import './index.css';
 import CourseHero from '@/components/organisms/CourseHero';
@@ -118,8 +120,9 @@ const renderStars = (rating: number, key: string) => {
 };
 
 export default function CourseDetailPage({ courseId }: CourseDetailPageProps) {
-  const { isAuthenticated, isChecking } = useAuthGuard({ redirectTo: '/auth/login' });
+  const { isAuthenticated, isChecking } = useAuthGuard({ redirectTo: '/auth/login', requireAuth: false });
   const router = useRouter();
+  const [hasStagingPurchase, setHasStagingPurchase] = useState(false);
 
   const requestedFeatures = useMemo<FeatureModuleKey[]>(
     () =>
@@ -256,11 +259,35 @@ export default function CourseDetailPage({ courseId }: CourseDetailPageProps) {
       : null;
   const isPaidCourse = priceAmount > 0;
   const isPurchased = course.isPurchased ?? false;
-  const primaryActionLabel = isPaidCourse && !isPurchased ? 'Purchase course' : 'Start learning';
+  const isStaging = env.APP_ENV === 'staging';
+  const effectivePurchased = isPurchased || (isStaging && hasStagingPurchase);
+  const primaryActionLabel = isPaidCourse && !effectivePurchased ? 'Purchase course' : 'Start learning';
+
+  useEffect(() => {
+    if (!isStaging) {
+      return;
+    }
+
+    setHasStagingPurchase(isStagingPurchaseMarked(courseId));
+  }, [courseId, isStaging]);
 
   const handleStartLearning = () => {
-    if (isPaidCourse && !isPurchased) {
+    if (isChecking) {
+      return;
+    }
+
+    if (isPaidCourse && !effectivePurchased) {
+      if (!isAuthenticated) {
+        router.push(`/auth/login?redirect=/course/${courseId}/payment`);
+        return;
+      }
+
       router.push(`/course/${courseId}/payment`);
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.push(`/auth/login?redirect=/learn/${courseId}`);
       return;
     }
 

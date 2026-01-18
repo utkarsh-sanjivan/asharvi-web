@@ -11,12 +11,14 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useFeatureModules } from '@/hooks/useFeatureModule';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { env } from '@/config/env';
 import type { FeatureModuleKey } from '@/store/modules/registry';
 import { coursesApi, useCourseDetailQuery } from '@/store/api/courses.api';
 import { selectUserProfile } from '@/store/selectors/user.selectors';
 import { selectMockCourses } from '@/store/selectors/mock.selectors';
 import type { PDFMetadata, Course, Section } from '@/types';
 import { API_BASE } from '@/config/env';
+import { isStagingPurchaseMarked } from '@/lib/staging-purchase';
 
 import './index.css';
 import LearningPlayerSection from '@/components/organisms/LearningPlayerSection';
@@ -125,6 +127,7 @@ interface NoteEntry {
 export default function LearningPage({ courseId }: { courseId: string }) {
   const { isAuthenticated, isChecking } = useAuthGuard({ redirectTo: '/auth/login' });
   const router = useRouter();
+  const [hasStagingPurchase, setHasStagingPurchase] = useState(false);
 
   const featureKeys = useMemo<FeatureModuleKey[]>(
     () => (process.env.NODE_ENV !== 'production' ? ['courses', 'wishlist', 'mock'] : ['courses', 'wishlist']),
@@ -150,6 +153,8 @@ export default function LearningPage({ courseId }: { courseId: string }) {
   const priceAmount = course?.price?.amount ?? course?.originalPrice ?? 0;
   const isPaidCourse = priceAmount > 0;
   const isPurchased = course?.isPurchased ?? false;
+  const isStaging = env.APP_ENV === 'staging';
+  const effectivePurchased = isPurchased || (isStaging && hasStagingPurchase);
 
   const lectures = useMemo(() => flattenCourseLectures(course), [course]);
   const initialLecture = useMemo(
@@ -189,6 +194,14 @@ export default function LearningPage({ courseId }: { courseId: string }) {
 
     initializedFromUrlRef.current = true;
   }, [activeLectureId, initialLecture, lectures]);
+
+  useEffect(() => {
+    if (!isStaging) {
+      return;
+    }
+
+    setHasStagingPurchase(isStagingPurchaseMarked(courseId));
+  }, [courseId, isStaging]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -358,10 +371,10 @@ export default function LearningPage({ courseId }: { courseId: string }) {
       return;
     }
 
-    if (isPaidCourse && !isPurchased) {
+    if (isPaidCourse && !effectivePurchased) {
       router.replace(`/course/${courseId}/payment`);
     }
-  }, [course, courseId, featuresReady, isChecking, isPaidCourse, isPurchased, router]);
+  }, [course, courseId, effectivePurchased, featuresReady, isChecking, isPaidCourse, router]);
 
   if (isLoadingState) {
     return (
