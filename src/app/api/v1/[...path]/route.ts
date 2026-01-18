@@ -56,6 +56,13 @@ function buildUpstreamHeaders(req: NextRequest): Headers {
     }
   });
 
+  if (!headers.has('authorization')) {
+    const accessToken = req.cookies.get('accessToken')?.value;
+    if (accessToken) {
+      headers.set('authorization', `Bearer ${accessToken}`);
+    }
+  }
+
   return headers;
 }
 
