@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { API_BASE } from '@/config/env';
+import { resolveApiUrl } from '@/lib/api-base';
 import { setAuthCookies } from '@/lib/auth-cookies';
 
 interface LoginRequestBody {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const upstreamResponse = await fetch(`${API_BASE}/auth/login`, {
+    const upstreamResponse = await fetch(resolveApiUrl('/auth/login'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
