@@ -9,13 +9,13 @@ const HOP_BY_HOP_HEADERS = new Set([
   'trailer',
   'transfer-encoding',
   'upgrade',
+  'host',
 ]);
 
-const REQUEST_STRIP_HEADERS = new Set([
+const RESPONSE_STRIP_HEADERS = new Set([
   ...HOP_BY_HOP_HEADERS,
-  'host',
   'content-length',
-  'accept-encoding',
+  'content-encoding',
 ]);
 
 const DEFAULT_TIMEOUT_MS = 8000;
@@ -31,13 +31,13 @@ function buildUpstreamUrl(
   internalBase: string,
   pathSegments: string[] | undefined
 ): string {
-
   // Always prefix with /api/v1 on the backend
   const apiPrefix = '/api/v1';
 
-  const suffix = pathSegments && pathSegments.length > 0
-    ? `/${pathSegments.join('/')}`
-    : '';
+  const suffix =
+    pathSegments && pathSegments.length > 0
+      ? `/${pathSegments.join('/')}`
+      : '';
 
   const url = new URL(internalBase);
   url.pathname = `${apiPrefix}${suffix}`;
@@ -51,7 +51,7 @@ function buildUpstreamHeaders(req: NextRequest): Headers {
 
   req.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    if (!REQUEST_STRIP_HEADERS.has(lower)) {
+    if (!RESPONSE_STRIP_HEADERS.has(lower)) {
       headers.set(key, value);
     }
   });
@@ -59,7 +59,10 @@ function buildUpstreamHeaders(req: NextRequest): Headers {
   return headers;
 }
 
-async function proxy(req: NextRequest, context: { params: Promise<{ path?: string[] }> }) {
+async function proxy(
+  req: NextRequest,
+  context: { params: Promise<{ path?: string[] }> }
+) {
   try {
     const internalBase = process.env.INTERNAL_API_BASE?.trim().replace(/\/+$/, '');
     if (!internalBase) {
@@ -94,11 +97,11 @@ async function proxy(req: NextRequest, context: { params: Promise<{ path?: strin
     const upstreamRes = await fetch(upstreamUrl, init);
     clearTimeout(timeoutId);
 
-    // Copy response headers, stripping hop-by-hop ones
+    // Copy response headers, stripping hop-by-hop and encoding/length
     const respHeaders = new Headers();
     upstreamRes.headers.forEach((value, key) => {
       const lower = key.toLowerCase();
-      if (!HOP_BY_HOP_HEADERS.has(lower)) {
+      if (!RESPONSE_STRIP_HEADERS.has(lower)) {
         respHeaders.set(key, value);
       }
     });
@@ -111,8 +114,7 @@ async function proxy(req: NextRequest, context: { params: Promise<{ path?: strin
   } catch (err: any) {
     console.error('API proxy error:', err);
 
-    const message =
-      err?.message ?? 'Upstream request failed in API proxy.';
+    const message = err?.message ?? 'Upstream request failed in API proxy.';
 
     return NextResponse.json(
       { ok: false, error: message },
@@ -122,24 +124,45 @@ async function proxy(req: NextRequest, context: { params: Promise<{ path?: strin
 }
 
 // Wire all HTTP methods to the same proxy handler
-export async function GET(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
+export async function GET(
+  req: NextRequest,
+  ctx: { params: Promise<{ path?: string[] }> }
+) {
   return proxy(req, ctx);
 }
-export async function POST(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
+export async function POST(
+  req: NextRequest,
+  ctx: { params: Promise<{ path?: string[] }> }
+) {
   return proxy(req, ctx);
 }
-export async function PUT(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
+export async function PUT(
+  req: NextRequest,
+  ctx: { params: Promise<{ path?: string[] }> }
+) {
   return proxy(req, ctx);
 }
-export async function PATCH(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
+export async function PATCH(
+  req: NextRequest,
+  ctx: { params: Promise<{ path?: string[] }> }
+) {
   return proxy(req, ctx);
 }
-export async function DELETE(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
+export async function DELETE(
+  req: NextRequest,
+  ctx: { params: Promise<{ path?: string[] }> }
+) {
   return proxy(req, ctx);
 }
-export async function HEAD(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
+export async function HEAD(
+  req: NextRequest,
+  ctx: { params: Promise<{ path?: string[] }> }
+) {
   return proxy(req, ctx);
 }
-export async function OPTIONS(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
+export async function OPTIONS(
+  req: NextRequest,
+  ctx: { params: Promise<{ path?: string[] }> }
+) {
   return proxy(req, ctx);
 }
