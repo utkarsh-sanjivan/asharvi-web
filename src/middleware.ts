@@ -157,7 +157,7 @@ function isPublicAsset(pathname: string) {
 }
 
 function isCsrfExemptPath(pathname: string) {
-  return pathname.startsWith('/api/auth/');
+  return pathname.startsWith('/api/auth/') || pathname.startsWith('/api/v1/auth/');
 }
 
 function encodePreloadedState(state: unknown) {
