@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -12,10 +12,12 @@ import SpinnerIcon from '@/components/icons/SpinnerIcon';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useFeatureModules } from '@/hooks/useFeatureModule';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { env } from '@/config/env';
 import type { FeatureModuleKey } from '@/store/modules/registry';
 import { coursesApi, useCourseDetailQuery } from '@/store/api/courses.api';
 import { selectMockCourses } from '@/store/selectors/mock.selectors';
 import type { Course } from '@/types';
+import { isStagingPurchaseMarked, markStagingPurchase } from '@/lib/staging-purchase';
 
 import './index.css';
 
@@ -70,6 +72,7 @@ const resolveInstructorName = (instructor?: Course['instructor']): string => {
 export default function CoursePaymentPage({ courseId }: { courseId: string }) {
   const { isAuthenticated, isChecking } = useAuthGuard({ redirectTo: '/auth/login' });
   const router = useRouter();
+  const [hasStagingPurchase, setHasStagingPurchase] = useState(false);
 
   const featureKeys = useMemo<FeatureModuleKey[]>(
     () => (process.env.NODE_ENV !== 'production' ? ['courses', 'wishlist', 'mock'] : ['courses', 'wishlist']),
@@ -97,17 +100,27 @@ export default function CoursePaymentPage({ courseId }: { courseId: string }) {
   const course = cachedCourse.data?.data ?? fallbackCourse;
   const isPaidCourse = (course?.price?.amount ?? 0) > 0;
   const isPurchased = course?.isPurchased ?? false;
+  const isStaging = env.APP_ENV === 'staging';
+  const effectivePurchased = isPurchased || (isStaging && hasStagingPurchase);
   const isLoadingState = isChecking || !featuresReady || (!course && isFetchingFallback);
+
+  useEffect(() => {
+    if (!isStaging) {
+      return;
+    }
+
+    setHasStagingPurchase(isStagingPurchaseMarked(courseId));
+  }, [courseId, isStaging]);
 
   useEffect(() => {
     if (!course || isChecking || !featuresReady) {
       return;
     }
 
-    if (!isPaidCourse || isPurchased) {
+    if (!isPaidCourse || effectivePurchased) {
       router.replace(`/learn/${courseId}`);
     }
-  }, [course, courseId, featuresReady, isChecking, isPaidCourse, isPurchased, router]);
+  }, [course, courseId, effectivePurchased, featuresReady, isChecking, isPaidCourse, router]);
 
   if (isLoadingState) {
     return (
@@ -149,6 +162,12 @@ export default function CoursePaymentPage({ courseId }: { courseId: string }) {
   const priceLabel = formatCurrency(course.price?.amount ?? course.originalPrice ?? 0, course.price?.currency);
   const durationLabel = formatDuration(course.metadata?.totalDuration);
   const instructorName = resolveInstructorName(course.instructor);
+
+  const handleStagingPurchase = () => {
+    markStagingPurchase(courseId);
+    setHasStagingPurchase(true);
+    router.replace(`/learn/${courseId}`);
+  };
 
   return (
     <div className="course-payment-page">
@@ -224,6 +243,11 @@ export default function CoursePaymentPage({ courseId }: { courseId: string }) {
                 <Button variant="primary" size="lg" disabled>
                   Proceed to payment
                 </Button>
+                {isStaging && (
+                  <Button variant="secondary" size="lg" onClick={handleStagingPurchase}>
+                    Mark as purchased (staging)
+                  </Button>
+                )}
                 <p className="course-payment-gateway-note">
                   Payments are not yet enabled in this environment.
                 </p>
