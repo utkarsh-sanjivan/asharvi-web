@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-import { API_BASE } from '@/config/env';
+import { resolveApiUrl } from '@/lib/api-base';
 import { clearAuthCookies, getRefreshTokenFromCookies, setAuthCookies } from '@/lib/auth-cookies';
 
 function normalizeAuthResponse(response: any) {
@@ -30,7 +30,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Refresh token missing' }, { status: 401 });
     }
 
-    const upstreamResponse = await fetch(`${API_BASE}/auth/refresh`, {
+    const upstreamResponse = await fetch(resolveApiUrl('/auth/refresh'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

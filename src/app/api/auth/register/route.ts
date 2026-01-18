@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { API_BASE } from '@/config/env';
+import { resolveApiUrl } from '@/lib/api-base';
 import { setAuthCookies } from '@/lib/auth-cookies';
 
 interface RegisterRequestBody {
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   try {
     const body: RegisterRequestBody = await request.json();
 
-    const upstreamResponse = await fetch(`${API_BASE}/auth/register`, {
+    const upstreamResponse = await fetch(resolveApiUrl('/auth/register'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

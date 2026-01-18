@@ -1,4 +1,4 @@
-import { API_BASE, env } from '@/config/env';
+import { resolveApiUrl } from '@/lib/api-base';
 import { clearAuthCookies, getAccessTokenFromCookies } from './auth-cookies';
 
 export interface User {
@@ -7,14 +7,6 @@ export interface User {
   email: string;
   role: string;
 }
-
-const resolveApiUrl = (path: string): string => {
-  if (API_BASE.startsWith('/')) {
-    return `${env.NEXT_PUBLIC_SITE_URL}${API_BASE}${path}`;
-  }
-
-  return `${API_BASE}${path}`;
-};
 
 /**
  * Get current user from server-side
