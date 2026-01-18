@@ -180,19 +180,21 @@ function logRequest(request: NextRequest, response: NextResponse, context: { isA
 
 function handleRouteProtection(request: NextRequest, isAuthenticated: boolean) {
   const { pathname } = request.nextUrl;
+  const redirectBase =
+    env.APP_ENV === 'staging' ? env.NEXT_PUBLIC_SITE_URL : request.nextUrl.origin;
 
   if (pathname.startsWith('/api') || pathname.startsWith('/_next') || isPublicAsset(pathname)) {
     return null;
   }
 
   if (!isAuthenticated && isProtectedPath(pathname)) {
-    const loginUrl = new URL('/auth/login', request.url);
+    const loginUrl = new URL('/auth/login', redirectBase);
     loginUrl.searchParams.set('redirect', `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(loginUrl);
   }
 
   if (isAuthenticated && isAuthPath(pathname)) {
-    const homeUrl = new URL('/', request.url);
+    const homeUrl = new URL('/', redirectBase);
     return NextResponse.redirect(homeUrl);
   }
 

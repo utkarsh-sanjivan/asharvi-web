@@ -1,4 +1,4 @@
-import { API_BASE, env } from '@/config/env';
+import { env } from '@/config/env';
 import { apiService } from '@/services/api.service';
 import { setUser, clearUser } from '@/store/user.slice';
 import type {
@@ -21,23 +21,21 @@ const normalizeUser = (payload: any): AuthUser => ({
   updatedAt: payload?.updatedAt,
 });
 
-const resolveApiUrl = (path: string): string => {
-  if (API_BASE.startsWith('/')) {
-    const origin =
-      typeof window !== 'undefined' && window.location.origin
-        ? window.location.origin
-        : env.NEXT_PUBLIC_SITE_URL;
-    return `${origin}${API_BASE}${path}`;
-  }
+const AUTH_BASE = '/api/auth';
 
-  return `${API_BASE}${path}`;
+const resolveAuthUrl = (path: string): string => {
+  const origin =
+    typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : env.NEXT_PUBLIC_SITE_URL;
+  return `${origin}${AUTH_BASE}${path}`;
 };
 
 export const authApi = apiService.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({
-        url: resolveApiUrl('/auth/login'),
+        url: resolveAuthUrl('/login'),
         method: 'POST',
         body: credentials,
       }),
@@ -69,7 +67,7 @@ export const authApi = apiService.injectEndpoints({
     }),
     logout: builder.mutation<LogoutResponse, void>({
       query: () => ({
-        url: resolveApiUrl('/auth/logout'),
+        url: resolveAuthUrl('/logout'),
         method: 'POST',
       }),
       invalidatesTags: ['Auth'],
@@ -87,7 +85,7 @@ export const authApi = apiService.injectEndpoints({
     }),
     register: builder.mutation<RegisterResponse, RegisterRequest>({
       query: (payload) => ({
-        url: resolveApiUrl('/auth/register'),
+        url: resolveAuthUrl('/register'),
         method: 'POST',
         body: payload,
       }),
@@ -118,7 +116,7 @@ export const authApi = apiService.injectEndpoints({
     }),
     profile: builder.query<ProfileResponse, void>({
       query: () => ({
-        url: resolveApiUrl('/auth/me'),
+        url: resolveAuthUrl('/me'),
         method: 'GET',
       }),
       providesTags: ['Auth'],
@@ -150,7 +148,7 @@ export const authApi = apiService.injectEndpoints({
     }),
     refresh: builder.mutation<RefreshResponse, void>({
       query: () => ({
-        url: resolveApiUrl('/auth/refresh'),
+        url: resolveAuthUrl('/refresh'),
         method: 'POST',
       }),
       invalidatesTags: ['Auth'],
