@@ -123,6 +123,10 @@ function ensureCsrfCookie(request: NextRequest, response: NextResponse) {
 }
 
 function validateCsrf(request: NextRequest): NextResponse | null {
+  if (isCsrfExemptPath(request.nextUrl.pathname)) {
+    return null;
+  }
+
   const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
   const method = request.method.toUpperCase();
 
@@ -150,6 +154,10 @@ function isAuthPath(pathname: string) {
 
 function isPublicAsset(pathname: string) {
   return PUBLIC_FILE.test(pathname);
+}
+
+function isCsrfExemptPath(pathname: string) {
+  return pathname.startsWith('/api/auth/');
 }
 
 function encodePreloadedState(state: unknown) {
