@@ -37,6 +37,25 @@ const SECURITY_HEADERS: Record<string, string> = {
   'X-XSS-Protection': '1; mode=block',
 };
 
+const CONNECT_SRC = ["'self'", 'https://*'];
+
+const addConnectSrcOrigin = (value: string) => {
+  try {
+    const url = new URL(value);
+    CONNECT_SRC.push(url.origin);
+  } catch (error) {
+    // Ignore relative URLs or invalid values.
+  }
+};
+
+if (env.NODE_ENV !== 'production') {
+  CONNECT_SRC.push('http://localhost:8080', 'http://127.0.0.1:8080');
+}
+
+if (env.APP_ENV === 'staging') {
+  addConnectSrcOrigin(env.NEXT_PUBLIC_API_BASE);
+}
+
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
@@ -44,7 +63,7 @@ const CONTENT_SECURITY_POLICY = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: https://*",
   "media-src 'self' https://storage.googleapis.com https://download.blender.org https://assets.mixkit.co",
-  "connect-src 'self' https://*",
+  `connect-src ${CONNECT_SRC.join(' ')}`,
   "frame-ancestors 'none'",
 ].join('; ');
 
