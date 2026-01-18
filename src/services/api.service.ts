@@ -213,7 +213,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, ApiError> = 
 
     const refreshResult = await rawBaseQuery(
       {
-        url: resolveApiUrl('/auth/refresh'),
+        url: '/api/auth/refresh',
         method: 'POST',
       },
       api,
